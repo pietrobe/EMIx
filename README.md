@@ -1,5 +1,5 @@
-# EMI and KNP-EMI solvers
-Parallel simulation of EMI and KNP-EMI models for complex geometries
+# EMIx
+Framework for scalable simulation of EMI and KNP-EMI problems in complex geometries
 
 ## Dependencies
 * FEniCS
