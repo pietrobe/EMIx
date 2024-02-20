@@ -1,5 +1,5 @@
-# EMI and KNP-EMI solvers
-Parallel simulation of EMI and KNP-EMI models for complex geometries
+# EMIx
+Framework for parallel simulations of EMI and KNP-EMI models in complex geometries
 
 ## Dependencies
 * FEniCS
@@ -7,8 +7,10 @@ Parallel simulation of EMI and KNP-EMI models for complex geometries
 
 ### Setup FEniCS docker
 
-```docker run -t -v $(pwd):/home/fenics -i ghcr.io/scientificcomputing/fenics:2023-11-15
-cd /home/fenics```
+
+`docker run -t -v $(pwd):/home/fenics -i ghcr.io/scientificcomputing/fenics:2023-11-15`\
+`cd /home/fenics`
+
 
 ### Install multiphenics
 `pip install git+https://github.com/multiphenics/multiphenics.git`
@@ -34,28 +36,38 @@ Read data/README for additional info about input generation from surface geometr
 
 Encode tag information in a dictionary:
 
-```tags = {'intra': 3 , 'extra': 1, 'boundary': 4, 'membrane': 2}```
+```
+tags = {'intra': 3 , 'extra': 1, 'boundary': 4, 'membrane': 2}
+```
 
 Construct (KNP)EMI problem given time step *dt*:
 
-```problem = EMI_problem(input_files, tags, dt)```
+```
+problem = EMI_problem(input_files, tags, dt)
+```
 
 Create ionic model (possibly for membrane subset, using tags=... argument, default is applied on all membranes) and call problem.init_ionic_model():
 
-```HH = HH_model(problem)	
-problem.init_ionic_model([HH])```
+```
+HH = HH_model(problem)	
+problem.init_ionic_model([HH])
+```
 
 
 Create solver object, given *time_steps*, and solve
 
-```solver = EMI_solver(problem, time_steps)
-solver.solve()```
+```
+solver = EMI_solver(problem, time_steps)
+solver.solve()
+```
 
 
 ### Serial run 
 
-```cd src/EMI
-python3 main.py```
+
+`cd src/EMI`\
+`python3 main.py`
+
 
 ###  Parallel run on N processors
 
