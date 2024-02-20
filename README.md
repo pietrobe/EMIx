@@ -7,8 +7,10 @@ Parallel simulation of EMI and KNP-EMI models for complex geometries
 
 ### Setup FEniCS docker
 
-```docker run -t -v $(pwd):/home/fenics -i ghcr.io/scientificcomputing/fenics:2023-11-15
-cd /home/fenics```
+```
+docker run -t -v $(pwd):/home/fenics -i ghcr.io/scientificcomputing/fenics:2023-11-15
+cd /home/fenics
+```
 
 ### Install multiphenics
 `pip install git+https://github.com/multiphenics/multiphenics.git`
