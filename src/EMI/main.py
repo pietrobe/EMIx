@@ -8,24 +8,25 @@ if __name__=='__main__':
 		
 	# global time step (s)	
 	dt = 0.00002
-	time_steps = 100
+	time_steps = 10
 
 	# grid size
 	N = int(argv[1])
 	
 	# square	
-	input_files = {'mesh_file':           "../../data/square/square"                  + str(N) + ".xml", \
-	 			   'subdomais_file': 		"../../data/square/square_physical_region"  + str(N) + ".xml", \
-	 			   'facets_file':           "../../data/square/square_facet_region"     + str(N) + ".xml", \
-	 			   'intra_restriction_dir': "../../data/square/square_restriction_om_i" + str(N) + ".rtc.xml", \
-	 			   'extra_restriction_dir': "../../data/square/square_restriction_om_e" + str(N) + ".rtc.xml"}		
+	input_path  = "../../data/square/"
+	input_files = {'mesh_file':             input_path + "square"                  + str(N) + ".xml", \
+	 			   'subdomais_file': 		input_path + "square_physical_region"  + str(N) + ".xml", \
+	 			   'facets_file':           input_path + "square_facet_region"     + str(N) + ".xml", \
+	 			   'intra_restriction_dir': input_path + "square_restriction_om_i" + str(N) + ".rtc.xml", \
+	 			   'extra_restriction_dir': input_path + "square_restriction_om_e" + str(N) + ".rtc.xml"}		
 
-	# cube
-	input_path  = "../../data/cube/"
-	input_files = {'mesh_file':           input_path + "cube_regions20.xdmf", \
-				   'facets_file':           input_path + "cube_facets20.xdmf", \
-				   'intra_restriction_dir': input_path + "cube_in_restriction20.rtc.xdmf", \
-				   'extra_restriction_dir': input_path + "cube_ex_restriction20.rtc.xdmf"}
+	# # cube
+	# input_path  = "../../data/cube/"
+	# input_files = {'mesh_file':             input_path + "cube_regions20.xdmf", \
+	# 			   'facets_file':           input_path + "cube_facets20.xdmf", \
+	# 			   'intra_restriction_dir': input_path + "cube_in_restriction20.rtc.xdmf", \
+	# 			   'extra_restriction_dir': input_path + "cube_ex_restriction20.rtc.xdmf"}
 			
 	tags = {'intra': 1 , 'extra': 2, 'boundary': 1, 'membrane': 2}	
 

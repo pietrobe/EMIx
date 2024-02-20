@@ -44,9 +44,6 @@ class EMI_solver(object):
 			
 			self.ksp.setOperators(self.A_, self.A_)				
 
-
-		if MPI.comm_world.rank == 0: print('TEST')
-
 		# impose boundary conditions
 		p.bcs.apply(self.A)		
 
