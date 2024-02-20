@@ -1,3 +1,7 @@
+# Outptu folders
+src/EMI/output/
+src/KNPEMI/output
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
