@@ -23,7 +23,7 @@ if __name__=='__main__':
 	problem.init_ionic_model([HH])
 
 	# solve
-	solver = EMI_solver(problem, time_steps)	
+	solver = EMI_solver(problem, time_steps, save_xdmf_files=True)	
 	solver.solve()
 
 	
