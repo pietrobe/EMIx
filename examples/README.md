@@ -1,4 +1,4 @@
-### Usage example (e.g. src/EMI/example.py)
+### EMI usage example (EMI_example.py)
 
 Create dictionary with input files:
 
@@ -13,7 +13,7 @@ input_files = {'mesh_file':"path/mesh.xdmf", 'facets_file': "path/facets.xdmf", 
 * `facets_file` contains surface tags
 * `intra/extra_restriction_dir` contain multiphenics restrictions 
 
-Read `data/README` for additional info about input generation from surface geometries.
+Read `data/README.md` for additional info about input generation from surface geometries.
 
 Encode tag information in a dictionary:
 
@@ -21,7 +21,7 @@ Encode tag information in a dictionary:
 tags = {'intra': 3 , 'extra': 1, 'boundary': 4, 'membrane': 2}
 ```
 
-Construct (KNP)EMI problem given time step *dt*:
+Construct EMI problem given time step *dt*:
 
 ```
 problem = EMI_problem(input_files, tags, dt)
@@ -101,6 +101,3 @@ save_mat        = False
 ##  Visualize output in Paraview
 + `Filters > Append Attributes` of both *solution.xdmf* and *subdomain.xdmf* (order is important to see time evolution)
 + `Filters > Threshold` according to subdomain tag and visualise field of interest
-
-
-**EMIx** is developed by [Dr. Pietro Benedusi](https://pietrobe.github.io/) in collaboration with [Marie E. Rognes](https://marierognes.org/)'s group at [Simula](https://www.simula.no/).
