@@ -44,9 +44,9 @@ solver.solve()
 
 ### Structure and functionalities
 
-The directories *src/KNP* and *src/EMI* contain files with the same structure, e.g. for EMI:
+The directories *src/EMIx/KNP* and *src/EMIx/EMI* contain files with the same structure, e.g. for EMI:
 
-*src/EMI/EMI_problem.py*
+*EMI_problem.py*
 
 * in the init() constructor mesh scaling factor and source factors can be set
 * physical parameters, FEM order, initial and boundary conditions can be set, e.g.:
@@ -72,7 +72,7 @@ dirichlet_bcs = False
 ```
 
 
-*src/EMI/EMI_solver.py*
+*EMI_solver.py*
 
 * solver and output parameters can be set:
 
@@ -92,7 +92,7 @@ save_png_files  = False
 save_mat        = False
 ```
 
-*src/EMI/EMI_ionic_model.py*
+*EMI_ionic_model.py*
 
 * ionic model can be created and a membrane forcing factor set
 
