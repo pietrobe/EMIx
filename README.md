@@ -1,4 +1,5 @@
 # EMIx
+![EMIx](https://github.com/pietrobe/EMIx/docs/EMIx_neg.png)
 Framework for parallel simulations of EMI and KNP-EMI models in complex geometries
 
 ## Dependencies
@@ -36,7 +37,7 @@ input_files = {'mesh_file':"path/mesh.xdmf", 'facets_file': "path/facets.xdmf", 
 * `facets_file` contains surface tags
 * `intra/extra_restriction_dir` contain multiphenics restrictions 
 
-Read data/README for additional info about input generation from surface geometries.
+Read `data/README` for additional info about input generation from surface geometries.
 
 Encode tag information in a dictionary:
 
