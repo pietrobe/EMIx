@@ -140,8 +140,4 @@ save_mat        = False
 + `Filters > Threshold` according to subdomain tag and visualise field of interest
 
 
-### Who do I talk to?
-
-* Pietro Benedusi, Simula & USI, benedp@usi.ch
-* Marie Rognes, Simula
-* Halvor Herlyng, Simula
+**EMIx** is developed by [Dr. Pietro Benedusi](https://pietrobe.github.io/) in collaboration with [Marie E. Rognes](https://marierognes.org/)'s group at [Simula](https://www.simula.no/).
