@@ -1,4 +1,4 @@
-### EMI usage example (EMI_example.py)
+### EMI usage, based on EMI_example.py
 
 Create dictionary with input files:
 
