@@ -1,5 +1,6 @@
 # EMIx
 ![EMIx](./docs/logos/EMIx.png | width=100)
+<img src="./docs/logos/EMIx.png" width="100" height="100">
 
 Framework for parallel simulations of EMI and KNP-EMI models in complex geometries
 
