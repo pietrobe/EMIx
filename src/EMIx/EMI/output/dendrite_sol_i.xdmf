@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<Xdmf Version="3.0">
+  <Domain>
+    <Grid Name="mesh" GridType="Uniform">
+      <Topology NumberOfElements="686760" TopologyType="Tetrahedron" NodesPerElement="4">
+        <DataItem Dimensions="686760 4" NumberType="UInt" Format="HDF">dendrite_sol_i.h5:/Mesh/mesh/topology</DataItem>
+      </Topology>
+      <Geometry GeometryType="XYZ">
+        <DataItem Dimensions="120297 3" Format="HDF">dendrite_sol_i.h5:/Mesh/mesh/geometry</DataItem>
+      </Geometry>
+      <Attribute Name="u_i" AttributeType="Scalar" Center="Node">
+        <DataItem Dimensions="120297 1" Format="HDF">dendrite_sol_i.h5:/VisualisationVector/0</DataItem>
+      </Attribute>
+    </Grid>
+  </Domain>
+</Xdmf>

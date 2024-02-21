@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf Version="3.0" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <Domain>
+    <Grid Name="TimeSeries" GridType="Collection" CollectionType="Temporal">
+      <Grid Name="mesh" GridType="Uniform">
+        <Topology NumberOfElements="48000" TopologyType="Tetrahedron" NodesPerElement="4">
+          <DataItem Dimensions="48000 4" NumberType="UInt" Format="HDF">sol_i.h5:/Mesh/0/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XYZ">
+          <DataItem Dimensions="9261 3" Format="HDF">sol_i.h5:/Mesh/0/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="1.000000000000000e-04" />
+        <Attribute Name="phi_i" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="9261 1" Format="HDF">sol_i.h5:/VisualisationVector/0</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="2.000000000000000e-04" />
+        <Attribute Name="phi_i" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="9261 1" Format="HDF">sol_i.h5:/VisualisationVector/1</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="3.000000000000000e-04" />
+        <Attribute Name="phi_i" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="9261 1" Format="HDF">sol_i.h5:/VisualisationVector/2</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="4.000000000000000e-04" />
+        <Attribute Name="phi_i" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="9261 1" Format="HDF">sol_i.h5:/VisualisationVector/3</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="5.000000000000000e-04" />
+        <Attribute Name="phi_i" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="9261 1" Format="HDF">sol_i.h5:/VisualisationVector/4</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="6.000000000000001e-04" />
+        <Attribute Name="phi_i" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="9261 1" Format="HDF">sol_i.h5:/VisualisationVector/5</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="7.000000000000001e-04" />
+        <Attribute Name="phi_i" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="9261 1" Format="HDF">sol_i.h5:/VisualisationVector/6</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="8.000000000000001e-04" />
+        <Attribute Name="phi_i" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="9261 1" Format="HDF">sol_i.h5:/VisualisationVector/7</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="9.000000000000002e-04" />
+        <Attribute Name="phi_i" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="9261 1" Format="HDF">sol_i.h5:/VisualisationVector/8</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="1.000000000000000e-03" />
+        <Attribute Name="phi_i" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="9261 1" Format="HDF">sol_i.h5:/VisualisationVector/9</DataItem>
+        </Attribute>
+      </Grid>
+    </Grid>
+  </Domain>
+</Xdmf>

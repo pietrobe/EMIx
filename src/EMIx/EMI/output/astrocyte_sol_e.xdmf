@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<Xdmf Version="3.0">
+  <Domain>
+    <Grid Name="mesh" GridType="Uniform">
+      <Topology NumberOfElements="118513" TopologyType="Tetrahedron" NodesPerElement="4">
+        <DataItem Dimensions="118513 4" NumberType="UInt" Format="HDF">astrocyte_sol_e.h5:/Mesh/mesh/topology</DataItem>
+      </Topology>
+      <Geometry GeometryType="XYZ">
+        <DataItem Dimensions="19336 3" Format="HDF">astrocyte_sol_e.h5:/Mesh/mesh/geometry</DataItem>
+      </Geometry>
+      <Attribute Name="u_e" AttributeType="Scalar" Center="Node">
+        <DataItem Dimensions="19336 1" Format="HDF">astrocyte_sol_e.h5:/VisualisationVector/0</DataItem>
+      </Attribute>
+      <Attribute Name="f" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="118513 1" Format="HDF">astrocyte_sol_e.h5:/MeshFunction/0/values</DataItem>
+      </Attribute>
+    </Grid>
+  </Domain>
+</Xdmf>
