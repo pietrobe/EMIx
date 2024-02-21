@@ -1,5 +1,5 @@
 # EMIx
-![EMIx](https://github.com/pietrobe/EMIx/docs/logos/EMIx.png)
+![EMIx](./docs/logos/EMIx.png)
 Framework for parallel simulations of EMI and KNP-EMI models in complex geometries
 
 ## Dependencies
