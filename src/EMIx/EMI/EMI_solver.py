@@ -13,7 +13,7 @@ from petsc4py     import PETSc
 class EMI_solver(object):
 
 	# constructor
-	def __init__(self, EMI_problem, time_steps):
+	def __init__(self, EMI_problem, time_steps, save_xdmf_files=False, save_png_files=False):
 		
 		self.problem    = EMI_problem
 		self.time_steps = time_steps		
@@ -21,8 +21,11 @@ class EMI_solver(object):
 		# init forms
 		self.problem.setup_bilinear_form()	
 		self.problem.setup_linear_form()	
-		
+
 		# output files		
+		self.save_xdmf_files = save_xdmf_files
+		self.save_png_files  = save_png_files
+		
 		if self.save_xdmf_files: self.init_xdmf()   		    		
 		if self.save_png_files:  self.init_png()   		    		
 		if self.save_mat:  self.time_steps = 1			
@@ -357,7 +360,5 @@ class EMI_solver(object):
 	verbose            = False
 
 	# output parameters	
-	save_xdmf_files = False
-	save_png_files  = False
 	save_mat        = False
 		

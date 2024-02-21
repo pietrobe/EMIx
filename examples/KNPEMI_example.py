@@ -1,5 +1,4 @@
-from EMIx.KNPEMI.KNPEMI_problem     import KNPEMI_problem
-from EMIx.KNPEMI.KNPEMI_solver      import KNPEMI_solver 
+from EMIx import *
 from EMIx.KNPEMI.KNPEMI_ionic_model import *
 import time
 from sys   import argv

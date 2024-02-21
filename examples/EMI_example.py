@@ -1,5 +1,4 @@
-from EMIx.EMI.EMI_problem import EMI_problem
-from EMIx.EMI.EMI_solver  import EMI_solver 
+from EMIx import *
 from EMIx.EMI.EMI_ionic_model import *
 
 if __name__=='__main__':
@@ -24,10 +23,10 @@ if __name__=='__main__':
 	problem.init_ionic_model([HH])
 
 	# solve
-	solver = EMI_solver(problem, time_steps)
+	solver = EMI_solver(problem, time_steps)	
 	solver.solve()
 
-	HH.plot_png()
+	
 
 	
 	
