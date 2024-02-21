@@ -35,4 +35,4 @@ pip install -e .
 `mpirun -n N python3 -u EMI_example.py`
 
 
-**EMIx** is developed by [Dr. Pietro Benedusi](https://pietrobe.github.io/) in collaboration with [Marie E. Rognes](https://marierognes.org/)'s group at [Simula](https://www.simula.no/).
+**EMIx** is developed by [Pietro Benedusi](https://pietrobe.github.io/) in collaboration with [Marie E. Rognes](https://marierognes.org/)'s group at [Simula](https://www.simula.no/).
