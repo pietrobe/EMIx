@@ -20,7 +20,7 @@ Encode tag information in a dictionary:
 ```
 tags = {'intra': 3 , 'extra': 1, 'boundary': 4, 'membrane': 2}
 ```
-The boundary tag is not necessary, when pure Neumann boundary conditions are used (default). The default value of the extra tag is 1 and the default of membrane is the same as intra. The intra tag must be proveide. Construct EMI problem given time step *dt*:
+The boundary tag is not necessary, when pure Neumann boundary conditions are used (default). The default value of the extra tag is 1 and the default of membrane is the same as the intra tag. The intra tag must be proveide. Construct EMI problem given time step *dt*:
 
 ```
 problem = EMI_problem(input_files, tags, dt)
@@ -86,14 +86,12 @@ nonzero_init_guess = True
 verbose            = False
 
 # output parameters	
-save_xdmf_files = False
-save_png_files  = False
 save_mat        = False
 ```
 
 *EMI_ionic_model.py*
 
-* ionic model can be created and a membrane forcing factor set
+* new ionic model can be created
 
 
 
