@@ -52,8 +52,8 @@ sample EMIx problem, run
 
 ```
 cd examples
-python3 EMI_example.py                # Test serial run
-mpirun -n N python3 -u EMI_example.py # Test parallel runs, with N the number of processors used
+python3 EMI_example.py                 # Serial run
+mpirun -n N python3 -u EMI_example.py  # Parallel run, with N the number of MPI processors used
 ```
 
 The expected results are terminal output from 100 time steps of solving
