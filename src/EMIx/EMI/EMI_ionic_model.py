@@ -5,20 +5,9 @@ from dolfin import *
 import numpy as np
 import time
 
-# stimulus
-def g_syn(g_syn_bar, t):
-		
-	# synaptic time constant (s)
-	a_syn = 0.002               
-
-	g = Expression('g_syn_bar*exp(-fmod(t,0.01)/a_syn)', g_syn_bar=g_syn_bar, a_syn=a_syn, t=t, degree=4)			
-	# g = Expression('10 * (x[2] < -0.045 ) * g_syn_bar', g_syn_bar=g_syn_bar, degree=4)			
-	# g = Expression('g_syn_bar', g_syn_bar=g_syn_bar, a_syn=a_syn, t=t, degree=4)			
-	# g = Expression('g_syn_bar*exp(-fmod(t,0.01)/a_syn)*(x[2] < 5e-4)', g_syn_bar=g_syn_bar, a_syn=a_syn, t=t, degree=4)		
-	# g = Expression('g_syn_bar*(x[0] < 0.3) * (x[1] < 0.3)', g_syn_bar=g_syn_bar, a_syn=a_syn, t=t, degree=4)		
-
-	return g
-
+# zero stimulus (default)
+def g_syn_none(g_syn_bar, a_syn, t):		
+	return Constant(0.0)
 
 
 class Ionic_model(ABC):
@@ -75,18 +64,23 @@ class HH_model(Ionic_model):
 	E_K       = -88.98e-3            # reversal potential K (V)
 	E_Cl      = 0  		             # reversal potential 0 (V)
 
+	# stimulus constant
+	a_syn   = 0.002   
+
+	# numerics
+	use_Rush_Lar   = True
+	time_steps_ODE = 26
+
 	# save gating in PNG	
-	save_png_file = True	
-	
-	
-	def __init__(self, EMI_problem, tags=None, stimuls=True, use_Rush_Lar = True, time_steps_ODE = 25):
+	save_png_file = True		
+		
+
+	def __init__(self, EMI_problem, tags=None, stim_fun=g_syn_none):
 
 		super().__init__(EMI_problem, tags)
-		
-		self.stimuls        = stimuls
-		self.use_Rush_Lar   = use_Rush_Lar
-		self.time_steps_ODE = time_steps_ODE		
- 	
+
+		self.g_Na_stim = stim_fun
+
 
 	def __str__(self):
 		return f'Hodgkin–Huxley'
@@ -114,9 +108,12 @@ class HH_model(Ionic_model):
 			if self.save_png_file: self.save_png()					
 		
 		# conductivities
-		g_Na = self.g_Na_leak + self.g_Na_bar*self.m**3*self.h + g_syn(self.g_syn_bar, float(p.t)) 
+		g_Na = self.g_Na_leak + self.g_Na_bar*self.m**3*self.h
 		g_K  = self.g_K_leak  + self.g_K_bar*self.n**4				
 		g_Cl = self.g_Cl_leak
+
+		# stimulus
+		g_Na += self.g_Na_stim(self.g_syn_bar, self.a_syn, float(p.t)) 
 
 		# ionic currents
 		I_ch_Na = g_Na * (p.phi_M - self.E_Na)
@@ -267,6 +264,8 @@ class HH_model(Ionic_model):
 
 			
 	
+
+
 
 
 

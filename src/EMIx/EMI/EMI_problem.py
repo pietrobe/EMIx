@@ -1,5 +1,6 @@
 # Copyright © 2023 Pietro Benedusi
 from EMIx.utils.Mix_dim_problem  import Mixed_dimensional_problem
+from EMIx.EMI.EMI_ionic_model import *
 from dolfin        import *
 from multiphenics  import *
 import numpy as np
@@ -19,18 +20,28 @@ parameters["form_compiler"]["quadrature_degree"] = 5 # TEST
 
 
 class EMI_problem(Mixed_dimensional_problem):
-	
-							
+								
 	def init(self):
 		
-		# set scaling factor
-		self.m_conversion_factor = 1
+		pass
 
-		# forcing factors
-		self.source_i = Expression("0*pi*pi*sin(2*pi*x[0]) * sin(2*pi*x[1]) * (1 + exp(-t))", degree = 4, t = self.t)
-		self.source_e = Expression("0*pi*pi*sin(2*pi*x[0]) * sin(2*pi*x[1])",  degree = 4)	
+	def	add_ionic_model(self, model_type, tags=None, stim_fun=g_syn_none):
+
+		if model_type == "HH":			
+
+			model = HH_model(self, tags, stim_fun);
+			self.ionic_models.append(model)	
+
+		elif model_type == "Passive":			
+			
+			model = Passive(self, tags);
+			self.ionic_models.append(model)	
+
+		else:
+			print("ERROR: ", model_type, " not supported")
+			exit()
+
 		
-
 	def setup_spaces(self):
 
 		if MPI.comm_world.rank == 0: print('Creating spaces...') 
@@ -106,8 +117,8 @@ class EMI_problem(Mixed_dimensional_problem):
 		dt   = self.dt 
 		C_M  = self.C_M
 		sigma_i  = self.sigma_i
-		sigma_e  = self.sigma_e
-						
+		sigma_e  = self.sigma_e	
+					
 		if MPI.comm_world.rank == 0: print('Setting up bilinear form...') 
 
 		# define measures
@@ -187,8 +198,7 @@ class EMI_problem(Mixed_dimensional_problem):
 			fe -= (C_M/dt) * inner(fg, ve('+'))*dS(gamma_tag)		
 		
 		self.f =  [fi, fe]
-	
-				
+					
 
 	### class variables ###
 		
@@ -197,6 +207,13 @@ class EMI_problem(Mixed_dimensional_problem):
 	sigma_i = 1.0
 	sigma_e = 1.0
 	
+	# set scaling factor
+	m_conversion_factor = 1
+
+	# forcing factors
+	source_i = Constant(0.0)
+	source_e = Constant(0.0)
+
 	# initial boundary potential 
 	phi_e_init = Constant(0.0)
 

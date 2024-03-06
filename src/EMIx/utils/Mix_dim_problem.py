@@ -12,7 +12,7 @@ def flatten_list(input_list):
 class Mixed_dimensional_problem(ABC):    
 
     t = Constant(0.0) 
-    
+        
 
     def __init__(self, input_files, tags, dt):      
 
@@ -94,15 +94,13 @@ class Mixed_dimensional_problem(ABC):
         if isinstance(self.gamma_tags, int): self.gamma_tags = (self.gamma_tags,)
     
 
-    def init_ionic_model(self, ionic_models):
-
-        self.ionic_models = ionic_models
+    def init_ionic_model(self):    
 
         # init list
         ionic_tags = [] 
 
         # check all ICS tags are present in some ionic model
-        for idx, model in enumerate(ionic_models):          
+        for idx, model in enumerate(self.ionic_models):          
             ionic_tags.append(model.tags)
 
         ionic_tags = sorted(flatten_list(ionic_tags))
@@ -116,7 +114,7 @@ class Mixed_dimensional_problem(ABC):
                 
         if MPI.comm_world.rank == 0:
             print("#Membrane tags =", len(gamma_tags))
-            print("#Ionic models  =", len(ionic_models),'\n')
+            print("#Ionic models  =", len(self.ionic_models),'\n')
     
 
     def setup_domain(self):

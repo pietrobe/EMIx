@@ -21,8 +21,18 @@ def generate_subdomain_restriction(mesh, subdomains, subdomain_ids):
         mesh_function_d = MeshFunction("bool", mesh, d)
         mesh_function_d.set_all(False)
         restriction.append(mesh_function_d)
+    
+    print("num_cells: ",mesh.num_cells())
+    counter_c = 0
+
     # Mark restriction mesh functions based on subdomain id
     for c in cells(mesh):
+
+        if counter_c % 50000 == 0:
+            print(c)
+
+        counter_c += 1
+
         if subdomains[c] in subdomain_ids:
             restriction[D][c] = True
             for d in range(D):
@@ -110,7 +120,7 @@ else:
 # ####################################
 
 # set input geometry 
-exterior_subdomain_id = 1
+exterior_subdomain_id = [1]
 interior_subdomain_id = [3]
 interface_id = 2
 boundary_id  = 4
@@ -138,35 +148,26 @@ boundaries = MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
 # hdf.read(boundaries, "/boundaries")
 
 while refine > 0:
+
+    print("num_vertices OLD: ",mesh.num_vertices())
     print("Refining mesh...")
     mesh = adapt(mesh)
+    print("num_vertices NEW: ",mesh.num_vertices())
+    print("Refining subdomains...")
     subdomains = adapt(subdomains, mesh)
+    print("Refining boundaries...")
     boundaries = adapt(boundaries, mesh)
     refine -= 1
 
 # Generate subdomain restrictions
 interior_restriction = generate_subdomain_restriction(mesh, subdomains, interior_subdomain_id)
-exterior_restriction = generate_subdomain_restriction(mesh, subdomains, [exterior_subdomain_id])
+exterior_restriction = generate_subdomain_restriction(mesh, subdomains, exterior_subdomain_id)
 
 # Generate interface restriction
 mark_internal_interface( mesh, subdomains, boundaries, interface_id)
 mark_external_boundaries(mesh, subdomains, boundaries, [exterior_subdomain_id], boundary_id)
 
 # interface_restriction = generate_interface_restriction(mesh, subdomains, {exterior_subdomain_id, interior_subdomain_id})
-
-# # Write xml files for mesh, subdomains and boundaries
-# print("Writing mesh...")
-# File("mesh.xml") << mesh
-# print("Writing physical_region...")
-# File("physical_region.xml") << subdomains
-# print("Writing facet_region...")
-# File("facets.xml")    << boundaries
-
-# # # Write xml files for restrictions
-# print("Writing restrictions...")
-# File("interior_restriction.rtc.xml")  << interior_restriction
-# File("exterior_restriction.rtc.xml")  << exterior_restriction
-# # File("interface_restriction.rtc.xml") << interface_restriction
 
 # Write xdmf
 print("Writing restrictions")

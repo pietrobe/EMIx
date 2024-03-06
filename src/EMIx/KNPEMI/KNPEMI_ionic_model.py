@@ -3,15 +3,9 @@ from dolfin import *
 import numpy as np
 import time
 
-# stimulus
-def g_syn(g_syn_bar, a_syn, t):
-		
-	g = Expression('g_syn_bar*exp(-fmod(t,0.01)/a_syn)', g_syn_bar=g_syn_bar, a_syn=a_syn, t=t, degree=4)			
-	# g = Expression('g_syn_bar', g_syn_bar=g_syn_bar, a_syn=a_syn, t=t, degree=4)			
-	# g = Expression('g_syn_bar*exp(-fmod(t,0.01)/a_syn)*(x[2] < 5e-4)', g_syn_bar=g_syn_bar, a_syn=a_syn, t=t, degree=4)		
-	# g = Expression('g_syn_bar*(x[0] < 0.3) * (x[1] < 0.3)', g_syn_bar=g_syn_bar, a_syn=a_syn, t=t, degree=4)		
-
-	return g
+# zero stimulus (default)
+def g_syn_none(g_syn_bar, a_syn, t):		
+	return Constant(0.0)
 
 
 # Kir-function used in ionic pump
@@ -56,6 +50,7 @@ class Ionic_model(ABC):
 		pass
 
 
+
 # I_ch = phi_M
 class Null_model(Ionic_model):
 
@@ -86,18 +81,21 @@ class Passive_model(Ionic_model):
 # I_ch = g*(phi_M - E) + stimuls
 class Passive_Nerst_model(Ionic_model):
 
-	def __init__(self, KNPEMI_problem, tags=None, stimuls=True):
+	def __init__(self, KNPEMI_problem, tags=None, stim_fun=g_syn_none):
 
 		super().__init__(KNPEMI_problem, tags)
 
-		self.stimuls = stimuls
+		self.g_Na_stim = stim_fun
 
-	def __str__(self):
-		return f'Passive'
 	
-	def _init(self):			
+	def __str__(self):		
+		return f'Passive'
+
+	
+	def _init(self):		
 		pass
 
+	
 	def _eval(self, ion_idx):	
 		
 		# aliases	
@@ -109,8 +107,8 @@ class Passive_Nerst_model(Ionic_model):
 		ion['g_k'] = ion['g_leak']
 
 		# stimulus
-		if ion['name'] == 'Na' and self.stimuls:
-			ion['g_k'] += g_syn(p.g_syn_bar, p.a_syn, float(p.t)) 
+		if ion['name'] == 'Na':
+			ion['g_k'] += self.g_Na_stim(p.g_syn_bar, p.a_syn, float(p.t)) 
 
 		I_ch = ion['g_k']*(phi_M - ion['E'])
 		
@@ -123,12 +121,19 @@ class Passive_K_pump_model(Ionic_model):
 	# -k_dec * ([K]e − [K]e_0) both for K and Na
 	use_decay_currents = False			
 
+	def __init__(self, KNPEMI_problem, tags=None, stim_fun=g_syn_none):
+
+		super().__init__(KNPEMI_problem, tags)
+
+		self.g_Na_stim = stim_fun
+
+	
 	def __str__(self):
 		if self.use_decay_currents:
-			return f'Passive with K pump and decay currents'
+			return f'Passive with K pump and decay currents'			
 		else:
-			return f'Passive with K pump'
-
+			return f'Passive with K pump'			
+			
 
 	def _init(self):
 
@@ -157,6 +162,10 @@ class Passive_K_pump_model(Ionic_model):
 
 		# leak currents
 		ion['g_k'] = ion['g_leak']
+
+		# stimulus
+		if ion['name'] == 'Na':
+			ion['g_k'] += self.g_Na_stim(p.g_syn_bar, p.a_syn, float(p.t)) 
 			
 		# f kir coeff	
 		if ion['name'] == 'K':
@@ -179,20 +188,22 @@ class Passive_K_pump_model(Ionic_model):
 
 # Hodgkin–Huxley + stimuls
 class HH_model(Ionic_model):
-	
-	def __init__(self, KNPEMI_problem, tags=None, stimuls=True, use_Rush_Lar = True, time_steps_ODE = 25):
+
+	# numerics
+	use_Rush_Lar   = True
+	time_steps_ODE = 25 	
+
+	def __init__(self, KNPEMI_problem, tags=None, stim_fun=g_syn_none):
 
 		super().__init__(KNPEMI_problem, tags)
 
-		self.stimuls = stimuls
-		self.use_Rush_Lar = use_Rush_Lar
-		self.time_steps_ODE = time_steps_ODE
- 	
+		self.g_Na_stim = stim_fun
+			
 
-	def __str__(self):
+	def __str__(self):		
 		return f'Hodgkin–Huxley'
 
-	def _init(self):	
+	def _init(self):			
 		
 		# alias
 		p = self.problem		
@@ -220,7 +231,7 @@ class HH_model(Ionic_model):
 
 		# stimulus and gating
 		if ion['name'] == 'Na':
-			if self.stimuls: ion['g_k'] += g_syn(p.g_syn_bar, p.a_syn, float(p.t)) 
+			ion['g_k'] += self.g_Na_stim(p.g_syn_bar, p.a_syn, float(p.t)) 
 			ion['g_k'] += p.g_Na_bar*p.m**3*p.h
 
 		elif ion['name'] == 'K':
@@ -295,11 +306,6 @@ class HH_model(Ionic_model):
 		if MPI.comm_world.rank == 0: print(f"ODE step in {toc - tic:0.4f} seconds")   	
 			
 	
-
-
-
-
-
 
 
 

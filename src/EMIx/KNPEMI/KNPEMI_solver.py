@@ -8,13 +8,18 @@ from dolfin       import *
 from multiphenics import *
 from petsc4py     import PETSc
 
+
 class KNPEMI_solver(object):
 
 	# constructor
-	def __init__(self, KNPEMI_problem, time_steps):
+	def __init__(self, KNPEMI_problem, time_steps, save_xdmf_files=False, save_png_files=False, save_mat=False):
 
+		# init variables 
 		self.problem    = KNPEMI_problem
 		self.time_steps = time_steps	
+		self.save_xdmfs = save_xdmf_files	
+		self.save_pngs  = save_png_files	
+		self.save_mat   = save_mat	
 
 		# init variational form
 		self.problem.setup_variational_form()				
@@ -24,9 +29,12 @@ class KNPEMI_solver(object):
 		if self.save_pngs:  self.init_png_savefile()		
 
 		# perform a single time step when saving matrices
-		if self.save_mat:   self.time_steps = 1 
+		if self.save_mat: self.time_steps = 1 
 		
-		if self.problem.MMS_test: self.problem.print_errors()					
+		if self.problem.MMS_test: self.problem.print_errors()		
+
+		# ininit ionic models 
+		self.problem.init_ionic_model()					
 
 
 	def assemble(self, init=True):	
@@ -55,7 +63,7 @@ class KNPEMI_solver(object):
 
 			# apply BCS
 			p.bcs.apply(self.A)
-			p.bcs.apply(self.F)
+			p.bcs.apply(self.F)						
 
 		else:
 
@@ -70,6 +78,7 @@ class KNPEMI_solver(object):
 			block_assemble(p.L, block_tensor=self.F)				
 			p.bcs.apply(self.F)
 				
+
 		
 		# TEST NullSpace
 
@@ -236,7 +245,7 @@ class KNPEMI_solver(object):
 	def solve(self):
 
 		# setup
-		self.setup_solver()
+		self.setup_solver()		
 		
 		# aliases		
 		p      = self.problem
@@ -269,11 +278,11 @@ class KNPEMI_solver(object):
 			
 			tic = time.perf_counter()	
 			p.setup_variational_form()		
-			setup_timer += time.perf_counter() - tic				
+			setup_timer += time.perf_counter() - tic						
 
 			# assemble	    
 			tic = time.perf_counter()		
-			self.assemble(i==0)								
+			self.assemble(i==0)											
 								
 			if MPI.comm_world.rank == 0: print(f"Time dependent assembly in {time.perf_counter() - tic:0.4f} seconds")   			
 			self.assembly_time.append(time.perf_counter() - tic)						
@@ -336,15 +345,7 @@ class KNPEMI_solver(object):
 			if self.save_pngs:	self.save_png()				
 							
 			if i == self.time_steps - 1:
-			
-				if self.save_pngs:  
-					self.print_figures()	
-					if MPI.comm_world.rank == 0: print("\nPNG output saved in", self.out_file_prefix)
-				
-				if self.save_xdmfs: 
-					self.close_xdmf()	
-					if MPI.comm_world.rank == 0: print("\nXDMF output saved in", self.out_file_prefix)									
-
+							
 				total_assembly_time = sum(self.assembly_time)
 				total_solve_time    = sum(self.solve_time)
 
@@ -359,6 +360,15 @@ class KNPEMI_solver(object):
 
 				# print solver and problem info
 				self.print_info()
+
+				if self.save_pngs:  
+					self.print_figures()	
+					if MPI.comm_world.rank == 0: print("\nPNG output saved in", self.out_file_prefix)
+				
+				if self.save_xdmfs: 
+					self.close_xdmf()	
+					if MPI.comm_world.rank == 0: print("\nXDMF output saved in", self.out_file_prefix)									
+
 		
 	
 	# print some infos
@@ -694,9 +704,6 @@ class KNPEMI_solver(object):
 
 	# output parameters
 	out_file_prefix = 'output/'
-	save_interval = 1
-	save_xdmfs  = False
-	save_fluxes = False	
-	save_pngs   = True	
-	save_mat    = False
+	save_interval = 1	
+	save_fluxes = False
 		

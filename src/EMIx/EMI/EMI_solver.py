@@ -1,5 +1,4 @@
 # Copyright © 2023 Pietro Benedusi
-
 from EMIx.EMI.EMI_problem import EMI_problem
 from EMIx.utils.misc      import dump
 import numpy as np 
@@ -18,7 +17,7 @@ class EMI_solver(object):
 		self.problem    = EMI_problem
 		self.time_steps = time_steps		
 
-		# init forms
+		# init forms		
 		self.problem.setup_bilinear_form()	
 		self.problem.setup_linear_form()	
 
@@ -28,7 +27,10 @@ class EMI_solver(object):
 		
 		if self.save_xdmf_files: self.init_xdmf()   		    		
 		if self.save_png_files:  self.init_png()   		    		
-		if self.save_mat:  self.time_steps = 1			
+		if self.save_mat:  self.time_steps = 1		
+
+		# ininit ionic models 
+		self.problem.init_ionic_model()	
 		
 
 	def assemble(self):	

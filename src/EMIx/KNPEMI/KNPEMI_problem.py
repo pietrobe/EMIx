@@ -1,8 +1,9 @@
 # Copyright © 2023 Pietro Benedusi
+from EMIx.utils.Mix_dim_problem import Mixed_dimensional_problem
+from EMIx.utils.MMS             import setup_MMS
+from EMIx.KNPEMI.KNPEMI_ionic_model import *
 from dolfin       import *
 from multiphenics import *
-from EMIx.utils.MMS             import setup_MMS
-from EMIx.utils.Mix_dim_problem import Mixed_dimensional_problem
 import numpy as np
 import time
 
@@ -23,19 +24,12 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 	
 
 	def init(self):
-
-		# set scaling factor
-		self.m_conversion_factor =  1e-6
-
-		# sources
-		self.f_i = Expression('0', degree = 1, t = self.t)
-		self.f_e = Expression('0', degree = 1, t = self.t)
 		
 		# for validation test
 		if self.MMS_test: 
 			self.setup_MMS_params() 		
 
-	
+
 	def setup_spaces(self):
 		
 		if MPI.comm_world.rank == 0: print('Creating spaces...') 
@@ -51,7 +45,7 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 		self.W = BlockFunctionSpace([self.V, self.V], restrict=[self.interior, self.exterior])
 
 		# create function for solution
-		self.wh  = BlockFunction(self.W)
+		self.wh = BlockFunction(self.W)
 
 		# create function for solution at previous time step		
 		self.u_p = BlockFunction(self.W)
@@ -122,7 +116,7 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 			bc = DirichletBC(We.sub(self.N_ions), self.phi_e_init, point_bc, method="pointwise")
 			bce.append(bc)		
 
-			self.bcs = BlockDirichletBC([None, bce])
+			self.bcs = BlockDirichletBC([None, bce])			
 
 	
 	def setup_variational_form(self):
@@ -150,7 +144,6 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 		dxi = dx(self.intra_tags)
 		dxe = dx(self.extra_tag)			
 		dS  = dS(self.gamma_tags) 
-
 
 		# for the test various gamma faces get different tags
 		if self.MMS_test:
@@ -295,14 +288,14 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 
 				L0 -= (dt*I_ch_k[gamma_tag] - alpha_i('-')*C_M*self.phi_M_prev)/(F*z)*vki('-')*dS(gamma_tag)
 				L1 += (dt*I_ch_k[gamma_tag] - alpha_e('-')*C_M*self.phi_M_prev)/(F*z)*vke('-')*dS(gamma_tag)
-			
+						
 			# add contribution to total current flux
 			J_phi_i += z*Ji
 			J_phi_e += z*Je
 
 			# source terms
-			L0 += inner(ion['f_i']*self.f_i,vki)*dxi									
-			L1 += inner(ion['f_e']*self.f_e,vke)*dxe									
+			L0 += inner(ion['f_i'],vki)*dxi									
+			L1 += inner(ion['f_e'],vke)*dxe									
 							
 			if self.MMS_test:
 				# define outward normal on exterior boundary (partial Omega)
@@ -449,6 +442,38 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 				  [0, p11]]
 	
 	
+	def	add_ionic_model(self, model_type, tags=None, stim_fun=g_syn_none):
+
+		if model_type == "HH":			
+
+			model = HH_model(self, tags, stim_fun);
+			self.ionic_models.append(model)	
+
+		elif model_type == "Passive":			
+			
+			model = Passive_model(self, tags);
+			self.ionic_models.append(model)	
+
+		elif model_type == "Passive_Nerst":			
+			
+			model = Passive_Nerst_model(self, tags, stim_fun);
+			self.ionic_models.append(model)	
+
+		elif model_type == "Passive_K_pump":			
+			
+			model = Passive_K_pump_model(self, tags, stim_fun);
+			self.ionic_models.append(model)	
+
+		elif model_type == "Null":			
+			
+			model = Null_model(self, tags);
+			self.ionic_models.append(model)	
+			
+		else:
+			print("ERROR: ", model_type, " not supported")
+			exit()
+	
+
 	def setup_MMS_params(self):
 
 		self.dirichlet_bcs       = True		
@@ -651,6 +676,9 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 	# create ion list
 	ion_list = [Na, K, Cl]
 	N_ions = len(ion_list) 
+
+	# scaling mesh factor
+	m_conversion_factor = 1e-6		
 
 	# order 
 	fem_order = 1
