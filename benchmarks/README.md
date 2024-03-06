@@ -14,5 +14,5 @@ save_png_files  = True/False
 ```
 
 ## Geometries 
-Please contact the developers for Model B,D, and C geometries 
+Complete geometric data for Model B,D, and C can be downloaded at https://doi.org/10.5281/zenodo.10728462
 

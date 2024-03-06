@@ -11,10 +11,10 @@ if __name__=='__main__':
 	time_steps = 100
 
 	# single astocyte in ECS	
-	input_files = {'mesh_file':	            "../data/cali/mesh_fn.xdmf", \
-				   'facets_file':           "../data/cali/facets_fn.xdmf", \
-				   'intra_restriction_dir': "../data/cali/interior_restriction_fn.rtc.xdmf", \
-				   'extra_restriction_dir': "../data/cali/exterior_restriction_fn.rtc.xdmf"}
+	input_files = {'mesh_file':	            "../data/neurons/mesh_fn.xdmf", \
+				   'facets_file':           "../data/neurons/facets_fn.xdmf", \
+				   'intra_restriction_dir': "../data/neurons/interior_restriction_fn.rtc.xdmf", \
+				   'extra_restriction_dir': "../data/neurons/exterior_restriction_fn.rtc.xdmf"}
 	
 	tags = {'intra': (2,3)}
 
