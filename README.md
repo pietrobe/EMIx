@@ -65,7 +65,7 @@ For the KNP-EMI case, run:
 mpirun -n N python3 -u KNPEMI_example.py
 ```
 
-Further informations in data/README.md and examples/data/README.md.
+Further informations in *data/README.md* and *examples/data/README.md*.
 
 ## Contributing guidelines
 
