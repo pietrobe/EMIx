@@ -13,7 +13,7 @@ The easiest way to get started is to install FEniCS via Docker and then to insta
 
 ### Downloading the EMIx package
 
-Download and enter the EMIx source code
+To download and enter the EMIx source code
 
 ```
 git clone git@github.com:pietrobe/EMIx.git
@@ -22,7 +22,7 @@ cd EMIx
 
 ### Installing FEniCS via Docker
 
-To install FEniCS, we recommend using Docker (www.docker.com). EMIx relies on FEniCS (legacy), and has been tested most recently with the specific Docker image listed below. 
+We recommend using Docker (www.docker.com) to install and run FEniCS. EMIx relies on FEniCS (legacy), and has been tested most recently with the specific Docker image listed below. To install FEniCS
 
 ```
 sudo docker run -t -v $(pwd):/home/fenics -i ghcr.io/scientificcomputing/fenics:2023-11-15
@@ -31,7 +31,7 @@ cd /home/fenics
 
 ### Installing multiphenics
 
-The multiphenics package adds robust parallel multi-domain support to (legacy) FEniCS. Install multiphenics
+The multiphenics package adds robust parallel multi-domain support to (legacy) FEniCS. To install multiphenics
 
 ```
 pip install git+https://github.com/multiphenics/multiphenics.git
@@ -39,7 +39,7 @@ pip install git+https://github.com/multiphenics/multiphenics.git
 
 ### Installing EMIx package
 
-Install the EMIx package
+To install the EMIx package
 
 ```
 pip install -e .
@@ -66,5 +66,5 @@ the EMI equations and simulation results in a separate directory
 
 ## Miscellaneous
 
-If you run into memory issues out-of-memory errors, check the memory limits of your Docker container, which may be set lower than the available system memory.
+If you run into memory issues in the form of segmentation faults or out-of-memory errors, check the memory limits of your Docker container, which may be set lower than the available system memory.
 
