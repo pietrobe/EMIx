@@ -1,6 +1,8 @@
 # Outptut folders
-src/EMIx/EMI/output/
+src/EMIx/EMI/output
 src/EMIx/KNPEMI/output
+benchmarks/output
+examples/output
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

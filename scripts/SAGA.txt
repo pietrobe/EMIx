@@ -1,2 +1,0 @@
-ssh benedp@saga.sigma2.no
-sshfs benedp@saga.sigma2.no:/cluster/home/benedp SAGA
