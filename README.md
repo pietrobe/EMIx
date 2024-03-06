@@ -53,7 +53,7 @@ sample EMIx problem, run
 ```
 cd examples
 python3 EMI_example.py                # Test serial run
-mpirun -n N python3 -u EMI_example.py # Test parallel runs
+mpirun -n N python3 -u EMI_example.py # Test parallel runs, with N the number of processors used
 ```
 
 The expected results are terminal output from 100 time steps of solving
@@ -62,7 +62,7 @@ the EMI equations and simulation results in a separate directory
 For the KNP-EMI case, run:
 
 ```
-mpirun -n N python3 -u EMI_example.py
+mpirun -n N python3 -u KNPEMI_example.py
 ```
 
 ## Contributing guidelines
