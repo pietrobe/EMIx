@@ -56,9 +56,14 @@ python3 EMI_example.py                # Test serial run
 mpirun -n N python3 -u EMI_example.py # Test parallel runs
 ```
 
-The expected results are terminal output from 10 time steps of solving
+The expected results are terminal output from 100 time steps of solving
 the EMI equations and simulation results in a separate directory
-(named output).
+(named output). 
+For the KNP-EMI case, run:
+
+```
+mpirun -n N python3 -u EMI_example.py
+```
 
 ## Contributing guidelines
 
