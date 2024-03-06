@@ -65,6 +65,8 @@ For the KNP-EMI case, run:
 mpirun -n N python3 -u KNPEMI_example.py
 ```
 
+Further informations in data/README.md and examples/data/README.md.
+
 ## Contributing guidelines
 
 **EMIx** is developed by [Pietro Benedusi](https://pietrobe.github.io/) in collaboration with [Marie E. Rognes](https://marierognes.org/)'s group at [Simula](https://www.simula.no/).
