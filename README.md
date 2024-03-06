@@ -1,38 +1,77 @@
 <img src="./docs/logos/EMIx.png" width="300" height="150">
 
-Framework for parallel simulations of EMI and KNP-EMI models in complex geometries
+Framework for parallel simulations of EMI and KNP-EMI models in complex geometries. 
 
 ## Dependencies
-* FEniCS
-* multiphenics
 
-### Setup FEniCS docker
+* FEniCS (www.fenicsproject.org)
+* multiphenics (https://github.com/multiphenics/multiphenics)
 
+## Quick start
+
+The easiest way to get started is to install FEniCS via Docker and then to install multiphenics and the EMIx package within the Docker container by following these steps.
+
+### Downloading the EMIx package
+
+To download and enter the EMIx source code
 
 ```
-docker run -t -v $(pwd):/home/fenics -i ghcr.io/scientificcomputing/fenics:2023-11-15
+git clone git@github.com:pietrobe/EMIx.git
+cd EMIx
+```
+
+### Installing FEniCS via Docker
+
+We recommend using Docker (www.docker.com) to install and run FEniCS. EMIx relies on FEniCS (legacy), and has been tested most recently with the specific Docker image listed below. To install FEniCS
+
+```
+sudo docker run -t -v $(pwd):/home/fenics -i ghcr.io/scientificcomputing/fenics:2023-11-15
 cd /home/fenics
 ```
 
-### Install multiphenics
+### Installing multiphenics
+
+The multiphenics package adds robust parallel multi-domain support to (legacy) FEniCS. To install multiphenics
+
 ```
 pip install git+https://github.com/multiphenics/multiphenics.git
 ```
 
-### Install EMIx package
+### Installing EMIx package
+
+To install the EMIx package
+
 ```
 pip install -e .
 ```
 
-### Serial run 
+### Testing the installation
 
-`cd src/examples`\
-`python3 EMI_example.py`
+To test that all dependencies are operating successfully using a
+sample EMIx problem, run
 
+```
+cd examples
+python3 EMI_example.py                 # Serial run
+mpirun -n N python3 -u EMI_example.py  # Parallel run, with N the number of MPI processors used
+```
 
-###  Parallel run on N processors
+The expected results are terminal output from 100 time steps of solving
+the EMI equations and simulation results in a separate directory
+(named output). 
+For the KNP-EMI case, run:
 
-`mpirun -n N python3 -u EMI_example.py`
+```
+mpirun -n N python3 -u KNPEMI_example.py
+```
 
+Further informations in *data/README.md* and *examples/data/README.md*.
+
+## Contributing guidelines
 
 **EMIx** is developed by [Pietro Benedusi](https://pietrobe.github.io/) in collaboration with [Marie E. Rognes](https://marierognes.org/)'s group at [Simula](https://www.simula.no/).
+
+## Miscellaneous
+
+If you run into memory issues in the form of segmentation faults or out-of-memory errors, check the memory limits of your Docker container, which may be set lower than the available system memory.
+
