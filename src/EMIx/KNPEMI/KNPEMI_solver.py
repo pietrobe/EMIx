@@ -70,10 +70,13 @@ class KNPEMI_solver(object):
 				tot_num_dofs = p.W.sub(0).dofmap().index_map().local_range()[1]
 				potential_dofs = list(range(p.N_ions, tot_num_dofs, p.N_ions+1))
 
+				# Find the dofs of the potentials in the restricted spaces by 
+				# indexing the unrestricted->restricted mapping with the dofs of the potentials
+				# in the unrestricted spaces 
 				res_phi_i_dofs = [ures2res_i[dof] for dof in potential_dofs if dof in ures2res_i]
 				res_phi_e_dofs = [ures2res_e[dof] for dof in potential_dofs if dof in ures2res_e]
 				
-				# Create PETSc nullspace vector
+				# Create PETSc nullspace vector based on the structure of A
 				A = as_backend_type(self.A).mat()
 				ns_vec = A.createVecLeft()
 
@@ -88,6 +91,8 @@ class KNPEMI_solver(object):
 				nullspace = PETSc.NullSpace().create(vectors=[ns_vec], comm=MPI.comm_world)
 				assert nullspace.test(A)
 
+				# Provide PETSc with the nullspace and orthogonalize the right-hand side vector
+				# with respect to the nullspace
 				as_backend_type(self.A_).setNullSpace(nullspace)
 				as_backend_type(self.A_).setNearNullSpace(nullspace)
 				nullspace.remove(self.F_)	
