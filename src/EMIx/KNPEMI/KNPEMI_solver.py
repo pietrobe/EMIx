@@ -77,8 +77,8 @@ class KNPEMI_solver(object):
 				res_phi_e_dofs = [ures2res_e[dof] for dof in potential_dofs if dof in ures2res_e]
 				
 				# Create PETSc nullspace vector based on the structure of A
-				A = as_backend_type(self.A).mat()
-				ns_vec = A.createVecLeft()
+				# A = as_backend_type(self.A).mat()
+				ns_vec = self.A_.createVecLeft()
 
 				# Set local values of nullspace vector and orthonormalize
 				ns_vec.setValuesLocal(res_phi_i_dofs, np.array([1.0]*len(res_phi_i_dofs)))
@@ -89,7 +89,7 @@ class KNPEMI_solver(object):
 
 				# Create nullspace object
 				nullspace = PETSc.NullSpace().create(vectors=[ns_vec], comm=MPI.comm_world)
-				assert nullspace.test(A)
+				assert nullspace.test(self.A_)
 
 				# Provide PETSc with the nullspace and orthogonalize the right-hand side vector
 				# with respect to the nullspace
@@ -97,28 +97,32 @@ class KNPEMI_solver(object):
 				as_backend_type(self.A_).setNearNullSpace(nullspace)
 				nullspace.remove(self.F_)	
 
-			# apply BCS
-			if p.dirichlet_bcs:
-				p.bcs.apply(self.A)
-				p.bcs.apply(self.F)						
+			# # apply BCS			
+			# p.bcs.apply(self.A)
+			# p.bcs.apply(self.F)						
 
 		else:
 
 			# matrix A
 			if self.reassemble_A: 
 				block_assemble(p.a, block_tensor=self.A)				
-				#p.bcs.apply(self.A)
+			
+				# # apply BCS
+				# p.bcs.apply(self.F)			
+	
 			else:
 				if MPI.comm_world.rank == 0: print("Skipping matrix A assembly")
 			
 			# RHS
-			block_assemble(p.L, block_tensor=self.F)				
-			#p.bcs.apply(self.F)			
+			block_assemble(p.L, block_tensor=self.F)		
+
+			# # apply BCS						
+			# p.bcs.apply(self.F)			
 	
 	def assemble_preconditioner(self):				
 
 		self.P = block_assemble(self.problem.P)
-		#self.problem.bcs.apply(self.P)
+		# self.problem.bcs.apply(self.P)
 		self.P_ = as_backend_type(self.P).mat()
 
 		if self.save_mat: 
