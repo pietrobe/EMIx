@@ -58,71 +58,85 @@ class KNPEMI_solver(object):
 				if self.use_P_mat:
 					self.ksp.setOperators(self.A_, self.P_) 
 				else:
-					self.ksp.setOperators(self.A_, self.A_)									
+					self.ksp.setOperators(self.A_, self.A_)		
 
-				#--------- SETUP NULLSPACE ---------#
+				if p.dirichlet_bcs or self.pin_solution:
+					# Problem either has 1. Dirichlet boundary conditions (BCs) on the domain boundary
+					# or 2. pure Neumann BCs handled by a point Dirichlet BC
+					# In both cases -> apply Dirichlet BCs			
+					p.bcs.apply(self.A)
+					p.bcs.apply(self.F)		
 
-				# Get the electric potential dofs in the restricted block function spaces
-				ures2res_i = p.W.block_dofmap().original_to_block(0) # mapping unrestricted->restricted intra
-				ures2res_e = p.W.block_dofmap().original_to_block(1) # mapping unrestricted->restricted extra
+				elif self.set_nullspace:
+					# Pure Neumann problem -> the sytem matrix is singular.
+					# Handle this by providing the nullspace of the linear system matrix 
+					# to the linear solver.
 
-				# Get dofs of the potentials in the unrestricted spaces
-				tot_num_dofs = p.W.sub(0).dofmap().index_map().local_range()[1]
-				potential_dofs = list(range(p.N_ions, tot_num_dofs, p.N_ions+1))
+					# Get the electric potential dofs in the restricted block function spaces
+					ures2res_i = p.W.block_dofmap().original_to_block(0) # mapping unrestricted->restricted intra
+					ures2res_e = p.W.block_dofmap().original_to_block(1) # mapping unrestricted->restricted extra
 
-				# Find the dofs of the potentials in the restricted spaces by 
-				# indexing the unrestricted->restricted mapping with the dofs of the potentials
-				# in the unrestricted spaces 
-				res_phi_i_dofs = [ures2res_i[dof] for dof in potential_dofs if dof in ures2res_i]
-				res_phi_e_dofs = [ures2res_e[dof] for dof in potential_dofs if dof in ures2res_e]
-				
-				# Create PETSc nullspace vector based on the structure of A
-				# A = as_backend_type(self.A).mat()
-				ns_vec = self.A_.createVecLeft()
+					# Get dofs of the potentials in the unrestricted spaces
+					tot_num_dofs = p.W.sub(0).dofmap().index_map().local_range()[1]
+					potential_dofs = list(range(p.N_ions, tot_num_dofs, p.N_ions+1))
 
-				# Set local values of nullspace vector and orthonormalize
-				ns_vec.setValuesLocal(res_phi_i_dofs, np.array([1.0]*len(res_phi_i_dofs)))
-				ns_vec.setValuesLocal(res_phi_e_dofs, np.array([1.0]*len(res_phi_e_dofs)))
-				ns_vec.assemble()
-				ns_vec.normalize()
-				assert np.isclose(ns_vec.norm(), 1.0)
+					# Find the dofs of the potentials in the restricted spaces by 
+					# indexing the unrestricted->restricted mapping with the dofs of the potentials
+					# in the unrestricted spaces 
+					res_phi_i_dofs = [ures2res_i[dof] for dof in potential_dofs if dof in ures2res_i]
+					res_phi_e_dofs = [ures2res_e[dof] for dof in potential_dofs if dof in ures2res_e]
+					
+					# Create PETSc nullspace vector based on the structure of A
+					ns_vec = self.A_.createVecLeft()
 
-				# Create nullspace object
-				nullspace = PETSc.NullSpace().create(vectors=[ns_vec], comm=MPI.comm_world)
-				assert nullspace.test(self.A_)
+					# Set local values of nullspace vector and orthonormalize
+					ns_vec.setValuesLocal(res_phi_i_dofs, np.array([1.0]*len(res_phi_i_dofs)))
+					ns_vec.setValuesLocal(res_phi_e_dofs, np.array([1.0]*len(res_phi_e_dofs)))
+					ns_vec.assemble()
+					ns_vec.normalize()
+					assert np.isclose(ns_vec.norm(), 1.0)
 
-				# Provide PETSc with the nullspace and orthogonalize the right-hand side vector
-				# with respect to the nullspace
-				as_backend_type(self.A_).setNullSpace(nullspace)
-				as_backend_type(self.A_).setNearNullSpace(nullspace)
-				nullspace.remove(self.F_)	
+					# Create nullspace object
+					nullspace = PETSc.NullSpace().create(vectors=[ns_vec], comm=MPI.comm_world)
+					assert nullspace.test(self.A_)
 
-			# # apply BCS			
-			# p.bcs.apply(self.A)
-			# p.bcs.apply(self.F)						
+					# Provide PETSc with the nullspace and orthogonalize the right-hand side vector
+					# with respect to the nullspace
+					as_backend_type(self.A_).setNullSpace(nullspace)
+					as_backend_type(self.A_).setNearNullSpace(nullspace)
+					nullspace.remove(self.F_)					
 
 		else:
 
-			# matrix A
+			# Assemble the linear system matrix A if reassembly is enabled
 			if self.reassemble_A: 
 				block_assemble(p.a, block_tensor=self.A)				
 			
-				# # apply BCS
-				# p.bcs.apply(self.F)			
+				if p.dirichlet_bcs or self.pin_solution:
+					# Problem either has 1. Dirichlet boundary conditions (BCs) on the domain boundary
+					# or 2. pure Neumann BCs handled by a point Dirichlet BC
+					# In both cases -> apply Dirichlet BCs	
+					p.bcs.apply(self.F)			
 	
 			else:
-				if MPI.comm_world.rank == 0: print("Skipping matrix A assembly")
+				if MPI.comm_world.rank == 0: print("Skipping matrix A assembly.")
 			
-			# RHS
+			# Assemble the right-hand side
 			block_assemble(p.L, block_tensor=self.F)		
 
-			# # apply BCS						
-			# p.bcs.apply(self.F)			
+			if p.dirichlet_bcs or self.pin_solution:
+				# Apply Dirichlet boundary conditions
+				p.bcs.apply(self.F)			
 	
 	def assemble_preconditioner(self):				
 
 		self.P = block_assemble(self.problem.P)
-		# self.problem.bcs.apply(self.P)
+		if self.problem.dirichlet_bcs or self.pin_solution:
+			# Problem either has 1. Dirichlet boundary conditions (BCs) on the domain boundary
+			# or 2. pure Neumann BCs handled by a point Dirichlet BC
+			# In both cases -> apply Dirichlet BCs	
+			self.problem.bcs.apply(self.P)
+
 		self.P_ = as_backend_type(self.P).mat()
 
 		if self.save_mat: 
@@ -697,8 +711,12 @@ class KNPEMI_solver(object):
 	assembly_interval = 1  # with 1 assemble matrix each A for each time step
 	verbose           = False	
 
+	# handling pure Neumann boundary conditions
+	set_nullspace = True  # provide linear solver with the nullspace of the system matrix
+	pin_solution  = False # pin the solution using a point Dirichlet BC
+
 	# output parameters
 	out_file_prefix = 'output/'
 	save_interval = 1	
 	save_fluxes = False
-		
+	
