@@ -26,8 +26,7 @@ class KNPEMI_solver(object):
 			
 		# output files		
 		if self.save_xdmfs: self.init_xdmf_savefile()
-		if self.save_pngs:  self.init_png_savefile()		
-
+		if self.save_pngs:  self.init_png_savefile()	
 		# perform a single time step when saving matrices
 		if self.save_mat: self.time_steps = 1 
 		
@@ -61,72 +60,60 @@ class KNPEMI_solver(object):
 				else:
 					self.ksp.setOperators(self.A_, self.A_)									
 
+				#--------- SETUP NULLSPACE ---------#
+
+				# Get the electric potential dofs in the restricted block function spaces
+				ures2res_i = p.W.block_dofmap().original_to_block(0) # mapping unrestricted->restricted intra
+				ures2res_e = p.W.block_dofmap().original_to_block(1) # mapping unrestricted->restricted extra
+
+				# Get dofs of the potentials in the unrestricted spaces
+				tot_num_dofs = p.W.sub(0).dofmap().index_map().local_range()[1]
+				potential_dofs = list(range(p.N_ions, tot_num_dofs, p.N_ions+1))
+
+				res_phi_i_dofs = [ures2res_i[dof] for dof in potential_dofs if dof in ures2res_i]
+				res_phi_e_dofs = [ures2res_e[dof] for dof in potential_dofs if dof in ures2res_e]
+				
+				# Create PETSc nullspace vector
+				A = as_backend_type(self.A).mat()
+				ns_vec = A.createVecLeft()
+
+				# Set local values of nullspace vector and orthonormalize
+				ns_vec.setValuesLocal(res_phi_i_dofs, np.array([1.0]*len(res_phi_i_dofs)))
+				ns_vec.setValuesLocal(res_phi_e_dofs, np.array([1.0]*len(res_phi_e_dofs)))
+				ns_vec.assemble()
+				ns_vec.normalize()
+				assert np.isclose(ns_vec.norm(), 1.0)
+
+				# Create nullspace object
+				nullspace = PETSc.NullSpace().create(vectors=[ns_vec], comm=MPI.comm_world)
+				assert nullspace.test(A)
+
+				as_backend_type(self.A_).setNullSpace(nullspace)
+				as_backend_type(self.A_).setNearNullSpace(nullspace)
+				nullspace.remove(self.F_)	
+
 			# apply BCS
-			p.bcs.apply(self.A)
-			p.bcs.apply(self.F)						
+			if p.dirichlet_bcs:
+				p.bcs.apply(self.A)
+				p.bcs.apply(self.F)						
 
 		else:
 
 			# matrix A
 			if self.reassemble_A: 
 				block_assemble(p.a, block_tensor=self.A)				
-				p.bcs.apply(self.A)
+				#p.bcs.apply(self.A)
 			else:
 				if MPI.comm_world.rank == 0: print("Skipping matrix A assembly")
 			
 			# RHS
 			block_assemble(p.L, block_tensor=self.F)				
-			p.bcs.apply(self.F)
-				
-
-		
-		# TEST NullSpace
-
-		# 	np.set_printoptions(threshold=np.inf)
-
-		# 	# ///////////////////////
-		# 	z = block_assemble(p.Null) ## TODO: neded only once move form here
-
-		# 	# from IPython import embed;embed()
-		# 	z.vec().array[z.vec().array>0] = 0.001
-
-		# 	# print(as_backend_type(z).vec()[:])
-
-		# 	nsp = PETSc.NullSpace().create(as_backend_type(z).vec())  
-
-		# 	# /////////// TODO MOVE			
-
-		# 	assert nsp.test(as_backend_type(self.A).mat())
-			
-		# 	if self.direct_solver:			
-		# 		as_backend_type(self.A).mat().setNullSpace(nsp)  					
-		# 	else:
-		# 		as_backend_type(self.A).mat().setNearNullSpace(nsp)      			
-
-		# 	# nsp.remove(as_backend_type(self.F).vec())
-		# 	# ///////////////////////
-
-		# 	# as_backend_type(self.A).mat().setNullSpace(Z_)        
-		# 	# self.A.set_nullspace(z_)
-
-		# 	# z = interpolate(Constant(0), p.V.sub(p.N_ions).collapse())
-		# 	# self.ksp.setNullSpace(z)
-
-		# 	# V = VectorFunctionSpace(p.mesh, 'CG', 1)		
-		# 	# z = interpolate(Constant(0), p.V.sub(p.N_ions).collapse())
-		# 	# # z_ = as_backend_type(z).vec()
-		# 	# # A_ = as_backend_type(self.A)
-		# 	# # A_.set_nullspace(z_)
-		# 	# basis = VectorSpaceBasis(z)
-		# 	# self.A.set_nullspace(basis)
-		# 	# ksp_ = (as_backend_type(self.ksp))
-		# 	# KSPSetNullSpace(ksp_,z_)
-				
+			#p.bcs.apply(self.F)			
 	
 	def assemble_preconditioner(self):				
 
 		self.P = block_assemble(self.problem.P)
-		self.problem.bcs.apply(self.P)
+		#self.problem.bcs.apply(self.P)
 		self.P_ = as_backend_type(self.P).mat()
 
 		if self.save_mat: 
@@ -280,6 +267,7 @@ class KNPEMI_solver(object):
 			p.setup_variational_form()		
 			setup_timer += time.perf_counter() - tic						
 
+
 			# assemble	    
 			tic = time.perf_counter()		
 			self.assemble(i==0)											
@@ -383,8 +371,6 @@ class KNPEMI_solver(object):
 			print("Local mesh cells =", p.mesh.num_cells())	
 			print("Local mesh vertices =", p.mesh.num_vertices())				
 			print("FEM order =", p.fem_order)
-
-			#from IPython import embed;embed()
 
 			if not self.direct_solver: print("System size =", self.A_.size[0])
 			print("Time steps =",  self.time_steps)			

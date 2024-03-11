@@ -116,7 +116,7 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 			bc = DirichletBC(We.sub(self.N_ions), self.phi_e_init, point_bc, method="pointwise")
 			bce.append(bc)		
 
-			self.bcs = BlockDirichletBC([None, bce])			
+			self.bcs = []#BlockDirichletBC([None, bce])			
 
 	
 	def setup_variational_form(self):

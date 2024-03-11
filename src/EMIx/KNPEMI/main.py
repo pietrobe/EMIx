@@ -13,7 +13,7 @@ if __name__=='__main__':
 		
 	# global time step (s)	
 	dt = 0.00005
-	time_steps = 100
+	time_steps = 10
 
 	# grid size
 	N = int(argv[1])
@@ -73,7 +73,7 @@ if __name__=='__main__':
 
 	# create KNP-EMI problem and solver
 	problem = KNPEMI_problem(input_files, tags, dt)		
-
+	
 	# set ionic models
 	problem.add_ionic_model("HH", stim_fun=g_Na_stim)
 	
