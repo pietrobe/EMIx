@@ -43,56 +43,64 @@ class EMI_solver(object):
 		# assemble
 		self.A = block_assemble(p.a)				
 
-		if not self.direct_solver: 							
-
+		if not self.direct_solver:
+			# Iterative solver
+			# Provide linear solver with PETSc structures 		
 			self.A_ = as_backend_type(self.A).mat()											
-			
 			self.ksp.setOperators(self.A_, self.A_)
 
-			if self.set_nullspace:
-				# Pure Neumann problem -> the sytem matrix is singular.
-				# Handle this by providing the nullspace of the linear system matrix 
-				# to the linear solver.
+			if p.dirichlet_bcs:
+				# Apply Dirichlet boundary conditions (BCs) to the linear system matrix
+				p.bcs.apply(self.A)
+			else:
+				# Pure Neumann BCs -> the system matrix is singular
+				if self.set_nullspace:
+					# Handle system singularity by providing the nullspace of the linear system matrix 
+					# to the linear solver.
 
-				# Get the electric potential dofs in the restricted block function spaces
-				ures2res_i = p.W.block_dofmap().original_to_block(0) # mapping unrestricted->restricted intra
-				ures2res_e = p.W.block_dofmap().original_to_block(1) # mapping unrestricted->restricted extra
+					# Get the electric potential dofs in the restricted block function spaces
+					ures2res_i = p.W.block_dofmap().original_to_block(0) # mapping unrestricted->restricted intra
+					ures2res_e = p.W.block_dofmap().original_to_block(1) # mapping unrestricted->restricted extra
 
-				# Get dofs of the potentials in the unrestricted spaces
-				tot_num_dofs = p.W.sub(0).dofmap().index_map().local_range()[1]
-				potential_dofs = list(range(0, tot_num_dofs))
+					# Get dofs of the potentials in the unrestricted spaces
+					tot_num_dofs = p.W.sub(0).dofmap().index_map().local_range()[1]
+					potential_dofs = list(range(0, tot_num_dofs))
 
-				# Find the dofs of the potentials in the restricted spaces by 
-				# indexing the unrestricted->restricted mapping with the dofs of the potentials
-				# in the unrestricted spaces 
-				res_phi_i_dofs = [ures2res_i[dof] for dof in potential_dofs if dof in ures2res_i]
-				res_phi_e_dofs = [ures2res_e[dof] for dof in potential_dofs if dof in ures2res_e]
-				
-				# Create PETSc nullspace vector based on the structure of A
-				ns_vec = self.A_.createVecLeft()
+					# Find the dofs of the potentials in the restricted spaces by 
+					# indexing the unrestricted->restricted mapping with the dofs of the potentials
+					# in the unrestricted spaces 
+					res_phi_i_dofs = [ures2res_i[dof] for dof in potential_dofs if dof in ures2res_i]
+					res_phi_e_dofs = [ures2res_e[dof] for dof in potential_dofs if dof in ures2res_e]
+					
+					# Create PETSc nullspace vector based on the structure of A
+					ns_vec = self.A_.createVecLeft()
 
-				# Set local values of nullspace vector and orthonormalize
-				ns_vec.setValuesLocal(res_phi_i_dofs, np.array([1.0]*len(res_phi_i_dofs)))
-				ns_vec.setValuesLocal(res_phi_e_dofs, np.array([1.0]*len(res_phi_e_dofs)))
-				ns_vec.assemble()
-				ns_vec.normalize()
-				assert np.isclose(ns_vec.norm(), 1.0)
+					# Set local values of nullspace vector and orthonormalize
+					ns_vec.setValuesLocal(res_phi_i_dofs, np.array([1.0]*len(res_phi_i_dofs)))
+					ns_vec.setValuesLocal(res_phi_e_dofs, np.array([1.0]*len(res_phi_e_dofs)))
+					ns_vec.assemble()
+					ns_vec.normalize()
+					assert np.isclose(ns_vec.norm(), 1.0)
 
-				# Create nullspace object
-				nullspace = PETSc.NullSpace().create(vectors=[ns_vec], comm=MPI.comm_world)
-				assert nullspace.test(self.A_)
+					# Create nullspace object
+					self.nullspace = PETSc.NullSpace().create(vectors=[ns_vec], comm=MPI.comm_world)
+					assert self.nullspace.test(self.A_)
 
-				# Provide PETSc with the nullspace and orthogonalize the right-hand side vector
-				# with respect to the nullspace
-				as_backend_type(self.A_).setNullSpace(nullspace)
-				as_backend_type(self.A_).setNearNullSpace(nullspace)
-				nullspace.remove(self.F_)				
+					# Provide PETSc with the nullspace and orthogonalize the right-hand side vector
+					# with respect to the nullspace
+					as_backend_type(self.A_).setNullSpace(self.nullspace)
+					as_backend_type(self.A_).setNearNullSpace(self.nullspace)
 
-		if p.dirichlet_bcs or self.pin_solution:
-			# Problem either has 1. Dirichlet boundary conditions (BCs) on the domain boundary
-			# or 2. pure Neumann BCs handled by a point Dirichlet BC
-			# In both cases -> apply Dirichlet BCs			
-			p.bcs.apply(self.A)
+				else:
+					# Handle system singularity by pinning the electric potential using
+					# a point Dirichlet BC
+					p.bcs.apply(self.A)		
+
+		else:
+			# Direct solver
+			if p.dirichlet_bcs:
+				# Apply Dirichlet BCs to linear system matrix
+				p.bcs.apply(self.A)
 
 		if self.save_mat:
 				
@@ -100,9 +108,6 @@ class EMI_solver(object):
 			dump(self.A.mat(),'output/Amat')	
 			exit()												
 			
-
-
-
 	def assemble_rhs(self):
 
 		# alias
@@ -110,7 +115,7 @@ class EMI_solver(object):
 			
 		self.F = block_assemble(p.f)
 
-		if p.dirichlet_bcs or self.pin_solution:
+		if p.dirichlet_bcs or (not p.dirichlet_bcs and not self.set_nullspace):
 			# Problem either has 1. Dirichlet boundary conditions (BCs) on the domain boundary
 			# or 2. pure Neumann BCs handled by a point Dirichlet BC
 			# In both cases -> apply Dirichlet BCs			
@@ -118,7 +123,6 @@ class EMI_solver(object):
 
 		if not self.direct_solver: 		
 			self.F_ = as_backend_type(self.F).vec()							
-		
 		
 	def setup_solver(self):
 
@@ -169,7 +173,14 @@ class EMI_solver(object):
 		V      = p.V
 
 		# setup
-		self.setup_solver()					
+		self.setup_solver()	
+
+		# assemble linear system matrix
+		tic = time.perf_counter()		
+		self.assemble()								
+								
+		if MPI.comm_world.rank == 0: print(f"Assembly in {time.perf_counter() - tic:0.4f} seconds")   			
+		self.assembly_time.append(time.perf_counter() - tic)				
 						
 		# Time-stepping
 		for i in range(self.time_steps):			
@@ -190,18 +201,10 @@ class EMI_solver(object):
 			
 			# assemble rhs
 			tic = time.perf_counter()		
-			self.assemble_rhs()								
+			self.assemble_rhs()
 								
 			if MPI.comm_world.rank == 0: print(f"Time dependent assembly in {time.perf_counter() - tic:0.4f} seconds")   			
-			self.assembly_time.append(time.perf_counter() - tic)		
-
-			if i==0:
-				# assemble linear system matrix
-				tic = time.perf_counter()		
-				self.assemble()								
-										
-				if MPI.comm_world.rank == 0: print(f"Assembly in {time.perf_counter() - tic:0.4f} seconds")   			
-				self.assembly_time.append(time.perf_counter() - tic)							
+			self.assembly_time.append(time.perf_counter() - tic)						
 
 			# Solve 		
 			tic = time.perf_counter()
@@ -409,5 +412,5 @@ class EMI_solver(object):
 	save_mat        = False
 
 	# handling pure Neumann boundary conditions
-	set_nullspace = True  # provide linear solver with the nullspace of the system matrix
-	pin_solution  = False # pin the solution using a point Dirichlet BC
+	set_nullspace = True  # True = provide linear solver with the nullspace of the system matrix,
+						  # False = pin the solution with a point Dirichlet BC
