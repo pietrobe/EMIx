@@ -73,7 +73,7 @@ if __name__=='__main__':
 
 	# create KNP-EMI problem and solver
 	problem = KNPEMI_problem(input_files, tags, dt)		
-
+	
 	# set ionic models
 	problem.add_ionic_model("HH", stim_fun=g_Na_stim)
 	

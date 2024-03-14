@@ -26,8 +26,7 @@ class KNPEMI_solver(object):
 			
 		# output files		
 		if self.save_xdmfs: self.init_xdmf_savefile()
-		if self.save_pngs:  self.init_png_savefile()		
-
+		if self.save_pngs:  self.init_png_savefile()	
 		# perform a single time step when saving matrices
 		if self.save_mat: self.time_steps = 1 
 		
@@ -59,74 +58,88 @@ class KNPEMI_solver(object):
 				if self.use_P_mat:
 					self.ksp.setOperators(self.A_, self.P_) 
 				else:
-					self.ksp.setOperators(self.A_, self.A_)									
+					self.ksp.setOperators(self.A_, self.A_)		
 
-			# apply BCS
-			p.bcs.apply(self.A)
-			p.bcs.apply(self.F)						
+				if p.dirichlet_bcs:
+					# Apply Dirichlet boundary conditions (BCs) to the linear system matrix and
+					# the right-hand side vector
+					p.bcs.apply(self.A)
+					p.bcs.apply(self.F)	
+
+				else:
+					# Pure Neumann BCs -> the system matrix is singular
+					if self.set_nullspace:
+						# Handle system singularity by providing the nullspace of the linear system matrix 
+						# to the linear solver.
+
+						# Get the electric potential dofs in the restricted block function spaces
+						ures2res_i = p.W.block_dofmap().original_to_block(0) # mapping unrestricted->restricted intra
+						ures2res_e = p.W.block_dofmap().original_to_block(1) # mapping unrestricted->restricted extra
+
+						# Get dofs of the potentials in the unrestricted spaces
+						tot_num_dofs = p.W.sub(0).dofmap().index_map().local_range()[1]
+						potential_dofs = list(range(p.N_ions, tot_num_dofs, p.N_ions+1))
+
+						# Find the dofs of the potentials in the restricted spaces by 
+						# indexing the unrestricted->restricted mapping with the dofs of the potentials
+						# in the unrestricted spaces 
+						res_phi_i_dofs = [ures2res_i[dof] for dof in potential_dofs if dof in ures2res_i]
+						res_phi_e_dofs = [ures2res_e[dof] for dof in potential_dofs if dof in ures2res_e]
+						
+						# Create PETSc nullspace vector based on the structure of A
+						ns_vec = self.A_.createVecLeft()
+
+						# Set local values of nullspace vector and orthonormalize
+						ns_vec.setValuesLocal(res_phi_i_dofs, np.array([1.0]*len(res_phi_i_dofs)))
+						ns_vec.setValuesLocal(res_phi_e_dofs, np.array([1.0]*len(res_phi_e_dofs)))
+						ns_vec.assemble()
+						ns_vec.normalize()
+						assert np.isclose(ns_vec.norm(), 1.0)
+
+						# Create nullspace object
+						self.nullspace = PETSc.NullSpace().create(vectors=[ns_vec], comm=MPI.comm_world)
+						assert self.nullspace.test(self.A_)
+
+						# Provide PETSc with the nullspace and orthogonalize the right-hand side vector
+						# with respect to the nullspace
+						as_backend_type(self.A_).setNullSpace(self.nullspace)
+						as_backend_type(self.A_).setNearNullSpace(self.nullspace)
+
+					else:
+						# Handle system singularity by pinning the electric potential using
+						# a point Dirichlet BC
+						p.bcs.apply(self.A)
+						p.bcs.apply(self.F)					
 
 		else:
-
-			# matrix A
+			# Direct solver
+			# Assemble the linear system matrix A if reassembly is enabled
 			if self.reassemble_A: 
 				block_assemble(p.a, block_tensor=self.A)				
-				p.bcs.apply(self.A)
+			
+				if p.dirichlet_bcs:
+					# Apply Dirichlet BCs to the right-hand side vector
+					p.bcs.apply(self.F)			
+	
 			else:
-				if MPI.comm_world.rank == 0: print("Skipping matrix A assembly")
+				if MPI.comm_world.rank == 0: print("Skipping matrix A assembly.")
 			
-			# RHS
-			block_assemble(p.L, block_tensor=self.F)				
-			p.bcs.apply(self.F)
-				
+			# Assemble the right-hand side
+			block_assemble(p.L, block_tensor=self.F)		
 
-		
-		# TEST NullSpace
-
-		# 	np.set_printoptions(threshold=np.inf)
-
-		# 	# ///////////////////////
-		# 	z = block_assemble(p.Null) ## TODO: neded only once move form here
-
-		# 	# from IPython import embed;embed()
-		# 	z.vec().array[z.vec().array>0] = 0.001
-
-		# 	# print(as_backend_type(z).vec()[:])
-
-		# 	nsp = PETSc.NullSpace().create(as_backend_type(z).vec())  
-
-		# 	# /////////// TODO MOVE			
-
-		# 	assert nsp.test(as_backend_type(self.A).mat())
-			
-		# 	if self.direct_solver:			
-		# 		as_backend_type(self.A).mat().setNullSpace(nsp)  					
-		# 	else:
-		# 		as_backend_type(self.A).mat().setNearNullSpace(nsp)      			
-
-		# 	# nsp.remove(as_backend_type(self.F).vec())
-		# 	# ///////////////////////
-
-		# 	# as_backend_type(self.A).mat().setNullSpace(Z_)        
-		# 	# self.A.set_nullspace(z_)
-
-		# 	# z = interpolate(Constant(0), p.V.sub(p.N_ions).collapse())
-		# 	# self.ksp.setNullSpace(z)
-
-		# 	# V = VectorFunctionSpace(p.mesh, 'CG', 1)		
-		# 	# z = interpolate(Constant(0), p.V.sub(p.N_ions).collapse())
-		# 	# # z_ = as_backend_type(z).vec()
-		# 	# # A_ = as_backend_type(self.A)
-		# 	# # A_.set_nullspace(z_)
-		# 	# basis = VectorSpaceBasis(z)
-		# 	# self.A.set_nullspace(basis)
-		# 	# ksp_ = (as_backend_type(self.ksp))
-		# 	# KSPSetNullSpace(ksp_,z_)
-				
+			if p.dirichlet_bcs:
+				# Apply Dirichlet BCs to the right-hand side vector
+				p.bcs.apply(self.F)			
 	
 	def assemble_preconditioner(self):				
 
 		self.P = block_assemble(self.problem.P)
-		self.problem.bcs.apply(self.P)
+		if self.problem.dirichlet_bcs or (not self.problem.dirichlet_bcs and not self.set_nullspace):
+			# Problem either has 1. Dirichlet boundary conditions (BCs) on the domain boundary
+			# or 2. pure Neumann BCs handled by a point Dirichlet BC
+			# In both cases -> apply Dirichlet BCs	
+			self.problem.bcs.apply(self.P)
+
 		self.P_ = as_backend_type(self.P).mat()
 
 		if self.save_mat: 
@@ -287,6 +300,7 @@ class KNPEMI_solver(object):
 			p.setup_variational_form()		
 			setup_timer += time.perf_counter() - tic						
 
+
 			# assemble	    
 			tic = time.perf_counter()		
 			self.assemble(i==0)											
@@ -397,8 +411,6 @@ class KNPEMI_solver(object):
 			print("Local mesh vertices =", p.mesh.num_vertices())				
 			print("FEM order =", p.fem_order)
 
-			#from IPython import embed;embed()
-
 			if not self.direct_solver: print("System size =", self.A_.size[0])
 			print("Time steps =",  self.time_steps)			
 			print("dt =", float(p.dt))
@@ -497,31 +509,7 @@ class KNPEMI_solver(object):
 
 		local_phi = p.phi_M_prev.vector().get_local(np.arange(num_dofs_local, dtype=np.int32))			
 
-		self.v_t.append(1000 * local_phi[self.point_to_plot]) # converting to mV 
-
-		# # TEST
-		# ui_p = self.problem.u_p.sub(0)		
-		# local_Na = ui_p.sub(0).vector().get_local(np.arange(num_dofs_local, dtype=np.int32))	
-
-		# # TEST2
-		# xcoord, ycoord = 0, 0
-
-		# # Find the matching vertex (if it exists)
-		# X = self.problem.mesh.coordinates()
-		# vertex_idx = np.where((X == (xcoord,ycoord)).all(axis = 1))[0] 
-
-		# if not vertex_idx:
-		# 	print('No matching vertex!')
-		# else:
-		# 	vertex_idx = vertex_idx[0]
-		# 	dof_idx    = vertex_2_dof[vertex_idx]
-		# 	# print dof_idx
-		# 	# v.vector()[dof_idx] = 1.
-
-		# self.Na_t.append(ui_p[dof_idx]) 
-
-		# with np.printoptions(threshold=np.inf):
-		# 	print(local_Na) 		
+		self.v_t.append(1000 * local_phi[self.point_to_plot]) # converting to mV 		
 
 		if hasattr(p, 'n'):
 			
@@ -580,27 +568,6 @@ class KNPEMI_solver(object):
 		plt.xlabel('time step')
 		plt.ylabel('Time (s)')
 		plt.savefig(self.out_file_prefix + 'timings.png')
-
-		# plt.figure(5)
-		# plt.plot(np.linspace(0, 1000*time_steps*dt, time_steps + 1), self.Na_t)
-		# plt.xlabel('time (ms)')
-		# plt.ylabel('Na')
-		# plt.savefig(self.out_Na_string)
-
-		# # TEST save data
-		# print('Saving .txt data...')		
-		# np.savetxt(self.out_file_prefix +'n.txt', self.n_t)
-		# np.savetxt(self.out_file_prefix +'m.txt', self.m_t)
-		# np.savetxt(self.out_file_prefix +'h.txt', self.h_t)
-		
-		# np.savetxt(self.out_file_prefix +'phi.txt', self.v_t)
-		# np.savetxt(self.out_file_prefix +'its_' + self.pc_type +'.txt', self.iterations)
-		# np.savetxt(self.out_file_prefix +'a_time.txt', self.assembly_time)
-		# np.savetxt(self.out_file_prefix +'s_time_' + self.pc_type +'.txt', self.solve_time)			
-
-		# for i in self.v_t:
-		# 	print(i, end = ' ')
-
 
 	def init_xdmf_savefile(self):
 
@@ -695,7 +662,6 @@ class KNPEMI_solver(object):
 
 		return
 
-
 	def close_xdmf(self):
 
 		self.xdmf_file.close()		
@@ -704,7 +670,6 @@ class KNPEMI_solver(object):
 			self.xdmf_flux.close()			
 
 		return	
-		
 	
 	# solvers parameters
 	direct_solver  = False
@@ -723,8 +688,11 @@ class KNPEMI_solver(object):
 	verbose           = False	
 	time_adaptive     = False
 
+	# handling pure Neumann boundary conditions
+	set_nullspace = True  # True = provide linear solver with the nullspace of the system matrix,
+						  # False = pin the solution with a point Dirichlet BC
+
 	# output parameters
 	out_file_prefix = 'output/'
 	save_interval = 1	
 	save_fluxes = False
-		

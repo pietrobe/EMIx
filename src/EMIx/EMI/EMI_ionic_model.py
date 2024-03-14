@@ -261,20 +261,3 @@ class HH_model(Ionic_model):
 		plt.legend()
 		plt.xlabel('time (ms)')
 		plt.savefig(self.out_gate_string)
-
-			
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-

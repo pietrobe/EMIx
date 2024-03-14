@@ -61,12 +61,12 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 		Wi = self.W.sub(0)
 		We = self.W.sub(1)
 
-		# add Dirichlet boundary conditions on exterior boundary
+		# add Dirichlet boundary conditions (BCs) on exterior boundary
 		bci = []
 		bce = []
 
 		if self.dirichlet_bcs: 
-			# bcs for concentrations
+			# BCs for the ion concentrations
 			# for idx, ion in enumerate(self.ion_list):
 
 				#bc = DirichletBC(Wi.sub(idx), ion['ki_init'], self.boundaries, self.bound_tag)
@@ -75,7 +75,7 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 				#bc = DirichletBC(We.sub(idx), ion['ke_init'], self.boundaries, self.bound_tag)
 				#bce.append(bc)			
 
-			# for pontential 	
+			# BCs for the electric pontentials
 			bc = DirichletBC(Wi.sub(self.N_ions), self.phi_i_init, self.boundaries, self.bound_tag)
 			bci.append(bc)		
 
@@ -83,8 +83,6 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 			bce.append(bc)		
 
 			self.bcs = BlockDirichletBC([bci, bce])
-			
-			# self.bcs = BlockDirichletBC([None, bce]) # old
 		
 		else: # set point-wise BC for natural BC			
 			
@@ -638,13 +636,13 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 	# E_Na    = 54.8e-3                # reversal potential Na (V)
 	# E_K     = -88.98e-3              # reversal potential K (V)
 	
-	# potassium buffering params
+	# potassium buffering parameters
 	rho_pump = 1.115e-6			     # maximum pump rate (mol/m**2 s)
 	P_Nai = 10                       # [Na+]i threshold for Na+/K+ pump (mol/m^3)
 	P_Ke  = 1.5                      # [K+]e  threshold for Na+/K+ pump (mol/m^3)
 	k_dec = 2.9e-8				     # Decay factor for [K+]e (m/s)
 
-	# initial conditions
+	# initial conditions for the electric potentials and ion concentrations
 	phi_e_init = Constant(0)         # external potential (V)
 	phi_i_init = Constant(-0.06774)  # internal potential (V) just for visualization
 	phi_M_init = Constant(-0.06774)  # membrane potential (V)	
@@ -655,12 +653,12 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 	Cl_i_init  = Constant(137)       # intracellular Cl concentration (mol/m^3)
 	Cl_e_init  = Constant(104)       # extracellular Cl concentration (mol/m^3)
 
-	# initial gating
+	# initial gating variables values
 	n_init = Constant(0.27622914792) # gating variable n
 	m_init = Constant(0.03791834627) # gating variable m
 	h_init = Constant(0.68848921811) # gating variable h
 
-	# sources
+	# source terms
 	Na_e_f = Constant(0.0)
 	Na_i_f = Constant(0.0)
 	K_e_f  = Constant(0.0)
@@ -680,20 +678,11 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 	# scaling mesh factor
 	m_conversion_factor = 1e-6		
 
-	# order 
+	# finite element polynomial order 
 	fem_order = 1
 	
 	# test flag
 	MMS_test = False	
 
-	# BC (only on phi)
-	dirichlet_bcs = False
-
-
-
-
-
-
-
-
-		
+	# Dirichlet boundary condition on the electric potentials
+	dirichlet_bcs = False		

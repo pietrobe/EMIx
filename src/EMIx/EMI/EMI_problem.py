@@ -225,14 +225,3 @@ class EMI_problem(Mixed_dimensional_problem):
 
 	# BC
 	dirichlet_bcs = False
-
-
-		
-
-
-
-
-
-
-
-		
