@@ -409,4 +409,4 @@ class EMI_solver(object):
 
 	# handling pure Neumann boundary conditions
 	set_nullspace = False  # True = provide linear solver with the nullspace of the system matrix,
-            						  # False = pin the solution with a point Dirichlet BC
+            			   # False = pin the solution with a point Dirichlet BC
