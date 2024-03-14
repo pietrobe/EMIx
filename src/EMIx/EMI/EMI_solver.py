@@ -281,8 +281,6 @@ class EMI_solver(object):
 		self.xdmf_file.write(self.problem.wh[1], float(self.problem.t))		
 		
 
-
-
 	def close_xdmf(self):
 
 		self.xdmf_file.close()		
@@ -349,8 +347,6 @@ class EMI_solver(object):
 		plt.ylabel('membrane potential (mV)')
 		plt.savefig(self.out_v_string)
 
-		
-
 
 	# solvers parameters
 	direct_solver  = False
@@ -360,7 +356,7 @@ class EMI_solver(object):
 	norm_type  	   = 'preconditioned'	
 	nonzero_init_guess = True 
 	verbose            = False
-
+	
 	# output parameters	
-	save_mat        = False
+	save_mat = False
 		

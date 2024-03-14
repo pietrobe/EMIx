@@ -14,27 +14,27 @@ if __name__=='__main__':
 		
 	# global time step (s)	
 	dt = 0.00003
-	time_steps = 100
+	time_steps = 200
 
-	# # grid size
-	# N = int(argv[1])
+	# grid size
+	N = int(argv[1])
 	
-	# # square	
-	# input_path  = "../../../data/square/"
-	# input_files = {'mesh_file':             input_path + "square"                  + str(N) + ".xml", \
-	#  			   'subdomais_file': 		input_path + "square_physical_region"  + str(N) + ".xml", \
-	#  			   'facets_file':           input_path + "square_facet_region"     + str(N) + ".xml", \
-	#  			   'intra_restriction_dir': input_path + "square_restriction_om_i" + str(N) + ".rtc.xml", \
-	#  			   'extra_restriction_dir': input_path + "square_restriction_om_e" + str(N) + ".rtc.xml"}		
+	# square	
+	input_path  = "../../../data/square/"
+	input_files = {'mesh_file':             input_path + "square"                  + str(N) + ".xml", \
+	 			   'subdomais_file': 		input_path + "square_physical_region"  + str(N) + ".xml", \
+	 			   'facets_file':           input_path + "square_facet_region"     + str(N) + ".xml", \
+	 			   'intra_restriction_dir': input_path + "square_restriction_om_i" + str(N) + ".rtc.xml", \
+	 			   'extra_restriction_dir': input_path + "square_restriction_om_e" + str(N) + ".rtc.xml"}		
 
-	# # # cube
-	# # input_path  = "../../data/cube/"
-	# # input_files = {'mesh_file':             input_path + "cube_regions20.xdmf", \
-	# # 			   'facets_file':           input_path + "cube_facets20.xdmf", \
-	# # 			   'intra_restriction_dir': input_path + "cube_in_restriction20.rtc.xdmf", \
-	# # 			   'extra_restriction_dir': input_path + "cube_ex_restriction20.rtc.xdmf"}
+	# # cube
+	# input_path  = "../../data/cube/"
+	# input_files = {'mesh_file':             input_path + "cube_regions20.xdmf", \
+	# 			   'facets_file':           input_path + "cube_facets20.xdmf", \
+	# 			   'intra_restriction_dir': input_path + "cube_in_restriction20.rtc.xdmf", \
+	# 			   'extra_restriction_dir': input_path + "cube_ex_restriction20.rtc.xdmf"}
 			
-	# tags = {'intra': 1 , 'extra': 2, 'boundary': 1, 'membrane': 2}	
+	tags = {'intra': 1 , 'extra': 2, 'boundary': 1, 'membrane': 2}	
 
 	# # Ale myelin	
 	# input_path  = "../../../data/myelin/"
@@ -45,14 +45,14 @@ if __name__=='__main__':
 		   	
 	# tags = {'intra': 3 , 'extra': 1, 'boundary': 4, 'membrane': 2}	
 
-	# Ale test	
-	input_path  = "../../../data/Ale_test/"
-	input_files = {'mesh_file':             input_path + "mesh0.xdmf",\
-				   'facets_file':           input_path + "facets0.xdmf",\
-				   'intra_restriction_dir': input_path + "interior_restriction0.rtc.xdmf",\
-				   'extra_restriction_dir': input_path + "exterior_restriction0.rtc.xdmf"}	
+	# # Ale test	
+	# input_path  = "../../../data/Ale_test/"
+	# input_files = {'mesh_file':             input_path + "mesh0.xdmf",\
+	# 			   'facets_file':           input_path + "facets0.xdmf",\
+	# 			   'intra_restriction_dir': input_path + "interior_restriction0.rtc.xdmf",\
+	# 			   'extra_restriction_dir': input_path + "exterior_restriction0.rtc.xdmf"}	
 		   	
-	tags = {'intra': 2 , 'extra': 1, 'boundary': 4, 'membrane': 2}	
+	# tags = {'intra': 2 , 'extra': 1, 'boundary': 4, 'membrane': 2}	
 		
 	# create EMI problem and ionic model
 	problem = EMI_problem(input_files, tags, dt)
