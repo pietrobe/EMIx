@@ -115,7 +115,7 @@ class EMI_solver(object):
 			
 		self.F = block_assemble(p.f)
 
-		if p.dirichlet_bcs or (not p.dirichlet_bcs and not self.set_nullspace):
+		if p.dirichlet_bcs or not self.set_nullspace:
 			# Problem either has 1. Dirichlet boundary conditions (BCs) on the domain boundary
 			# or 2. pure Neumann BCs handled by a point Dirichlet BC
 			# In both cases -> apply Dirichlet BCs			
@@ -328,8 +328,6 @@ class EMI_solver(object):
 		self.xdmf_file.write(self.problem.wh[1], float(self.problem.t))		
 		
 
-
-
 	def close_xdmf(self):
 
 		self.xdmf_file.close()		
@@ -412,5 +410,5 @@ class EMI_solver(object):
 	save_mat        = False
 
 	# handling pure Neumann boundary conditions
-	set_nullspace = True  # True = provide linear solver with the nullspace of the system matrix,
+	set_nullspace = False  # True = provide linear solver with the nullspace of the system matrix,
 						  # False = pin the solution with a point Dirichlet BC
