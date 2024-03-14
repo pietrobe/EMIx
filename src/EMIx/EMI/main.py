@@ -27,12 +27,12 @@ if __name__=='__main__':
 	 			   'intra_restriction_dir': input_path + "square_restriction_om_i" + str(N) + ".rtc.xml", \
 	 			   'extra_restriction_dir': input_path + "square_restriction_om_e" + str(N) + ".rtc.xml"}		
 
-	# # # cube
-	# # input_path  = "../../data/cube/"
-	# # input_files = {'mesh_file':             input_path + "cube_regions20.xdmf", \
-	# # 			   'facets_file':           input_path + "cube_facets20.xdmf", \
-	# # 			   'intra_restriction_dir': input_path + "cube_in_restriction20.rtc.xdmf", \
-	# # 			   'extra_restriction_dir': input_path + "cube_ex_restriction20.rtc.xdmf"}
+	# # cube
+	# input_path  = "../../data/cube/"
+	# input_files = {'mesh_file':             input_path + "cube_regions20.xdmf", \
+	# 			   'facets_file':           input_path + "cube_facets20.xdmf", \
+	# 			   'intra_restriction_dir': input_path + "cube_in_restriction20.rtc.xdmf", \
+	# 			   'extra_restriction_dir': input_path + "cube_ex_restriction20.rtc.xdmf"}
 			
 	tags = {'intra': 1 , 'extra': 2, 'boundary': 1, 'membrane': 2}	
 

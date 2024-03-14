@@ -20,8 +20,8 @@ if __name__=='__main__':
 	# NOTE: by default extra_tag = 1 and membrane_tags = intra_tags
 	tags = {'intra': (2,3,4)}
 
-	# create EMI problem and ionic model
-	problem = KNPEMI_problem(input_files, tags, dt)	
+	# create KNPEMI problem and ionic model
+	problem = KNPEMI_problem(input_files, tags, dt)		
 	
 	# add models depending on membrane tags
 

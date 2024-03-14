@@ -1,6 +1,6 @@
 # Copyright © 2023 Pietro Benedusi
 from EMIx.KNPEMI.KNPEMI_problem import KNPEMI_problem 
-from EMIx.utils.misc            import norm_2, dump
+from EMIx.utils.misc            import norm_2, dump, get_adaptive_dt
 import numpy as np 
 import matplotlib.pyplot as plt
 import time
@@ -262,8 +262,7 @@ class KNPEMI_solver(object):
 		
 		# aliases		
 		p      = self.problem
-		t      = p.t
-		dt     = p.dt
+		t      = p.t		
 		wh     = p.wh
 		N_ions = p.N_ions				
 		V      = p.V.sub(N_ions).collapse()
@@ -275,11 +274,19 @@ class KNPEMI_solver(object):
 				
 		setup_timer = 0		
 
+		self.t_list  = []		
+		self.t_list.append(float(t))
+		if self.time_adaptive: self.dt_list = []
+
 		# Time-stepping
 		for i in range(self.time_steps):			
 
+			dt = p.dt
+
 			# Update current time
 			t.assign(float(t + dt))
+			self.t_list.append(float(t))
+			if self.time_adaptive: self.dt_list.append(1000*float(dt))
 
 			# print some infos
 			if MPI.comm_world.rank == 0:
@@ -320,7 +327,13 @@ class KNPEMI_solver(object):
 			self.solve_time.append(time.perf_counter() - tic)						
 			
 			if not self.direct_solver:
-				self.iterations.append(self.ksp.getIterationNumber())
+				
+				its = self.ksp.getIterationNumber()
+				self.iterations.append(its)
+
+				# use time adaptivity
+				if self.time_adaptive:
+					p.dt = Constant(get_adaptive_dt(float(dt), its))				
 
 			if self.save_mat:
 				
@@ -517,7 +530,7 @@ class KNPEMI_solver(object):
 
 		# save plot of membrane potential
 		plt.figure(0)
-		plt.plot(np.linspace(0, 1000*time_steps*dt, time_steps + 1), self.v_t)
+		plt.plot(self.t_list, self.v_t)
 		plt.xlabel('time (ms)')
 		plt.ylabel('membrane potential (mV)')
 		plt.savefig(self.out_v_string)
@@ -525,9 +538,9 @@ class KNPEMI_solver(object):
 		# save plot of gating variables
 		if hasattr(self.problem, 'n'):
 			plt.figure(1)
-			plt.plot(np.linspace(0, 1000*time_steps*dt, time_steps + 1), self.n_t, label='n')
-			plt.plot(np.linspace(0, 1000*time_steps*dt, time_steps + 1), self.m_t, label='m')
-			plt.plot(np.linspace(0, 1000*time_steps*dt, time_steps + 1), self.h_t, label='h')
+			plt.plot(self.t_list, self.n_t, label='n')
+			plt.plot(self.t_list, self.m_t, label='m')
+			plt.plot(self.t_list, self.h_t, label='h')
 			plt.legend()
 			plt.xlabel('time (ms)')
 			plt.savefig(self.out_gate_string)
@@ -539,9 +552,16 @@ class KNPEMI_solver(object):
 			plt.xlabel('time step')
 			plt.ylabel('number of iterations')
 			plt.savefig(self.out_file_prefix + 'iterations.png')
-			
+
+		if self.time_adaptive:
+				plt.figure(3)
+				plt.plot(self.dt_list)
+				plt.xlabel('time step')
+				plt.ylabel('dt (ms)')
+				plt.savefig(self.out_file_prefix + 'dt.png')
+				
 		# save runtime data
-		plt.figure(3)
+		plt.figure(4)
 		plt.plot(self.assembly_time, label='assembly')
 		plt.plot(self.solve_time, label='solve')
 		plt.legend()
@@ -666,6 +686,7 @@ class KNPEMI_solver(object):
 	# misc.
 	assembly_interval = 1  # with 1 assemble matrix each A for each time step
 	verbose           = False	
+	time_adaptive     = False
 
 	# handling pure Neumann boundary conditions
 	set_nullspace = True  # True = provide linear solver with the nullspace of the system matrix,

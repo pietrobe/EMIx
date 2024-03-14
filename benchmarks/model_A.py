@@ -10,10 +10,10 @@ if __name__=='__main__':
 		
 	# temporal discretization
 	dt = 0.00005
-	time_steps = 150
+	time_steps = 10
 
 	# spatial discretization
-	N_x = 32
+	N_x = 128
 	p = 1
 
 	# dimension
@@ -49,7 +49,7 @@ if __name__=='__main__':
 	problem.add_ionic_model("HH", stim_fun=g_Na_stim)
 
 	# solve with both .xdmf and .png output
-	solver = KNPEMI_solver(problem, time_steps, save_xdmf_files=True, save_png_files=True)
+	solver = KNPEMI_solver(problem, time_steps, save_xdmf_files=False, save_png_files=False)
 	solver.solve()
 
 	

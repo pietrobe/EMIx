@@ -78,7 +78,7 @@ if __name__=='__main__':
 	problem.add_ionic_model("HH", stim_fun=g_Na_stim)
 	
 	# solve
-	solver = KNPEMI_solver(problem, time_steps, True, True)
+	solver = KNPEMI_solver(problem, time_steps, False, True)
 	solver.solve()
 
 
