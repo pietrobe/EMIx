@@ -41,23 +41,23 @@ class EMI_solver(object):
 		if MPI.comm_world.rank == 0: print('Assembling linear system...') 	
 
 		# assemble
-		self.A = block_assemble(p.a)				
+		self.A = block_assemble(p.a)		
 
-		if not self.direct_solver:
-			# Iterative solver
-			# Provide linear solver with PETSc structures 		
+		# apply Dirichlet BC
+		if p.dirichlet_bcs:
+			p.bcs.apply(self.A)
+
+		# pure Neumann BCs -> the system matrix is singular	(direct solver can handle it automatically)
+		elif not self.direct_solver:
+
+			# iterative solver
+			# provide linear solver with PETSc structures 		
 			self.A_ = as_backend_type(self.A).mat()											
 			self.ksp.setOperators(self.A_, self.A_)
 
-			if p.dirichlet_bcs or not self.set_nullspace:
-				# Apply Dirichlet boundary conditions (BCs) to the linear system matrix 
-				# Or pin for Neumann
-				p.bcs.apply(self.A)
-			else:
-				# Pure Neumann BCs -> the system matrix is singular				
-				# Handle system singularity by providing the nullspace of the linear system matrix 
-				# to the linear solver.
-				# Get the electric potential dofs in the restricted block function spaces
+			# handle system singularity by providing nullspace 
+			if self.set_nullspace:
+
 				ures2res_i = p.W.block_dofmap().original_to_block(0) # mapping unrestricted->restricted intra
 				ures2res_e = p.W.block_dofmap().original_to_block(1) # mapping unrestricted->restricted extra
 
@@ -89,33 +89,38 @@ class EMI_solver(object):
 				# with respect to the nullspace
 				as_backend_type(self.A_).setNullSpace(self.nullspace)
 				as_backend_type(self.A_).setNearNullSpace(self.nullspace)
-		else:
-			# Direct solver
-			if p.dirichlet_bcs:
-				# Apply Dirichlet BCs to linear system matrix
+
+			# Or pin the potential in one point
+			else:
 				p.bcs.apply(self.A)
-			
+	
 		if self.save_mat:
 				
 			print("Saving output/Amat...")  
 			dump(self.A.mat(),'output/Amat')	
 			exit()												
 			
-	def assemble_rhs(self):
+	def assemble_rhs(self, init=True):
 
 		# alias
 		p = self.problem		
+
+		if init:
+
+			self.F = block_assemble(p.f);
+
+			if not self.direct_solver: 		
+				self.F_ = as_backend_type(self.F).vec()	
+		else:
 			
-		self.F = block_assemble(p.f)
+			block_assemble(p.f, block_tensor=self.F)
 
 		if p.dirichlet_bcs or not self.set_nullspace:
 			# Problem either has 1. Dirichlet boundary conditions (BCs) on the domain boundary
 			# or 2. pure Neumann BCs handled by a point Dirichlet BC
 			# In both cases -> apply Dirichlet BCs			
 			p.bcs.apply(self.F)
-
-		if not self.direct_solver: 		
-			self.F_ = as_backend_type(self.F).vec()	# TODO this only one?						
+			
 		
 	def setup_solver(self):
 
@@ -194,7 +199,7 @@ class EMI_solver(object):
 			
 			# assemble rhs
 			tic = time.perf_counter()		
-			self.assemble_rhs()
+			self.assemble_rhs(i == 0)
 								
 			if MPI.comm_world.rank == 0: print(f"Time dependent assembly in {time.perf_counter() - tic:0.4f} seconds")   			
 			self.assembly_time.append(time.perf_counter() - tic)						

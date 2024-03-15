@@ -50,6 +50,7 @@ class KNPEMI_solver(object):
 			self.A = block_assemble(p.a)				
 			self.F = block_assemble(p.L)
 
+			# create PETSC data structures for the iterative solver
 			if not self.direct_solver: 							
 
 				self.A_ = as_backend_type(self.A).mat()
@@ -60,21 +61,18 @@ class KNPEMI_solver(object):
 				else:
 					self.ksp.setOperators(self.A_, self.A_)		
 
-				if p.dirichlet_bcs or not self.set_nullspace:
-					
-					# Apply Dirichlet boundary conditions (BCs) to the linear system matrix and
-					# the right-hand side vector
-					# Or handle system singularity by pinning the electric potential using
-					# a point Dirichlet BC
+			# impose BC
+			if p.dirichlet_bcs:
 
-					p.bcs.apply(self.A)
-					p.bcs.apply(self.F)	
+				# Apply Dirichlet boundary conditions and the right-hand side vector				
+				p.bcs.apply(self.A)
+				p.bcs.apply(self.F)
 
-				else:
-					# Pure Neumann BCs -> the system matrix is singular
-				
-					# Handle system singularity by providing the nullspace of the linear system matrix 
-					# to the linear solver.
+			# Neumann BC (direct solver does it in automatic)
+			elif not self.direct_solver:
+
+				# Handle system singularity providing a nullspace
+				if self.set_nullspace:					
 
 					# Get the electric potential dofs in the restricted block function spaces
 					ures2res_i = p.W.block_dofmap().original_to_block(0) # mapping unrestricted->restricted intra
@@ -101,22 +99,25 @@ class KNPEMI_solver(object):
 					assert np.isclose(ns_vec.norm(), 1.0)
 
 					# Create nullspace object
-					self.nullspace = PETSc.NullSpace().create(vectors=[ns_vec], comm=MPI.comm_world)
-					assert self.nullspace.test(self.A_)
+					nullspace = PETSc.NullSpace().create(vectors=[ns_vec], comm=MPI.comm_world)
+					assert nullspace.test(self.A_)
 
 					# Provide PETSc with the nullspace and orthogonalize the right-hand side vector
 					# with respect to the nullspace
-					as_backend_type(self.A_).setNullSpace(self.nullspace)
-					as_backend_type(self.A_).setNearNullSpace(self.nullspace)
+					as_backend_type(self.A_).setNullSpace(nullspace)
+					as_backend_type(self.A_).setNearNullSpace(nullspace)
 
+				else:
+					# Handle system singularity by pinning potential using a point Dirichlet BC
+					p.bcs.apply(self.A)
+					p.bcs.apply(self.F)						
 		else:
-			# Direct solver
+
 			# Assemble the linear system matrix A if reassembly is enabled
 			if self.reassemble_A: 
 				block_assemble(p.a, block_tensor=self.A)				
 			
-				if p.dirichlet_bcs or not self.set_nullspace:
-					# Apply Dirichlet BCs to the right-hand side vector
+				if p.dirichlet_bcs or not self.set_nullspace:					
 					p.bcs.apply(self.A)			
 	
 			else:
@@ -125,8 +126,7 @@ class KNPEMI_solver(object):
 			# Assemble the right-hand side
 			block_assemble(p.L, block_tensor=self.F)		
 
-			if p.dirichlet_bcs or not self.set_nullspace:
-				# Apply Dirichlet BCs to the right-hand side vector
+			if p.dirichlet_bcs or not self.set_nullspace:				
 				p.bcs.apply(self.F)			
 	
 	def assemble_preconditioner(self):				
@@ -297,7 +297,6 @@ class KNPEMI_solver(object):
 			tic = time.perf_counter()	
 			p.setup_variational_form()		
 			setup_timer += time.perf_counter() - tic						
-
 
 			# assemble	    
 			tic = time.perf_counter()		

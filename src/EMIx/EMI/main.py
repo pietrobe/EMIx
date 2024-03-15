@@ -14,7 +14,7 @@ if __name__=='__main__':
 		
 	# global time step (s)	
 	dt = 0.00003
-	time_steps = 1000
+	time_steps = 100
 
 	# grid size
 	N = int(argv[1])

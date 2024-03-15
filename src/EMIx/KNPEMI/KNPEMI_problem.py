@@ -685,4 +685,4 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 	MMS_test = False	
 
 	# Dirichlet boundary condition on the electric potentials
-	dirichlet_bcs = False		
+	dirichlet_bcs = False
