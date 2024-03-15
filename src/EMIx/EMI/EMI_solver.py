@@ -49,59 +49,52 @@ class EMI_solver(object):
 			self.A_ = as_backend_type(self.A).mat()											
 			self.ksp.setOperators(self.A_, self.A_)
 
-			if p.dirichlet_bcs:
-				# Apply Dirichlet boundary conditions (BCs) to the linear system matrix
+			if p.dirichlet_bcs or not self.set_nullspace:
+				# Apply Dirichlet boundary conditions (BCs) to the linear system matrix 
+				# Or pin for Neumann
 				p.bcs.apply(self.A)
 			else:
-				# Pure Neumann BCs -> the system matrix is singular
-				if self.set_nullspace:
-					# Handle system singularity by providing the nullspace of the linear system matrix 
-					# to the linear solver.
+				# Pure Neumann BCs -> the system matrix is singular				
+				# Handle system singularity by providing the nullspace of the linear system matrix 
+				# to the linear solver.
+				# Get the electric potential dofs in the restricted block function spaces
+				ures2res_i = p.W.block_dofmap().original_to_block(0) # mapping unrestricted->restricted intra
+				ures2res_e = p.W.block_dofmap().original_to_block(1) # mapping unrestricted->restricted extra
 
-					# Get the electric potential dofs in the restricted block function spaces
-					ures2res_i = p.W.block_dofmap().original_to_block(0) # mapping unrestricted->restricted intra
-					ures2res_e = p.W.block_dofmap().original_to_block(1) # mapping unrestricted->restricted extra
+				# Get dofs of the potentials in the unrestricted spaces
+				tot_num_dofs = p.W.sub(0).dofmap().index_map().local_range()[1]
+				potential_dofs = list(range(0, tot_num_dofs))
 
-					# Get dofs of the potentials in the unrestricted spaces
-					tot_num_dofs = p.W.sub(0).dofmap().index_map().local_range()[1]
-					potential_dofs = list(range(0, tot_num_dofs))
+				# Find the dofs of the potentials in the restricted spaces by 
+				# indexing the unrestricted->restricted mapping with the dofs of the potentials
+				# in the unrestricted spaces 
+				res_phi_i_dofs = [ures2res_i[dof] for dof in potential_dofs if dof in ures2res_i]
+				res_phi_e_dofs = [ures2res_e[dof] for dof in potential_dofs if dof in ures2res_e]
+				
+				# Create PETSc nullspace vector based on the structure of A
+				ns_vec = self.A_.createVecLeft()
 
-					# Find the dofs of the potentials in the restricted spaces by 
-					# indexing the unrestricted->restricted mapping with the dofs of the potentials
-					# in the unrestricted spaces 
-					res_phi_i_dofs = [ures2res_i[dof] for dof in potential_dofs if dof in ures2res_i]
-					res_phi_e_dofs = [ures2res_e[dof] for dof in potential_dofs if dof in ures2res_e]
-					
-					# Create PETSc nullspace vector based on the structure of A
-					ns_vec = self.A_.createVecLeft()
+				# Set local values of nullspace vector and orthonormalize
+				ns_vec.setValuesLocal(res_phi_i_dofs, np.array([1.0]*len(res_phi_i_dofs)))
+				ns_vec.setValuesLocal(res_phi_e_dofs, np.array([1.0]*len(res_phi_e_dofs)))
+				ns_vec.assemble()
+				ns_vec.normalize()
+				assert np.isclose(ns_vec.norm(), 1.0)
 
-					# Set local values of nullspace vector and orthonormalize
-					ns_vec.setValuesLocal(res_phi_i_dofs, np.array([1.0]*len(res_phi_i_dofs)))
-					ns_vec.setValuesLocal(res_phi_e_dofs, np.array([1.0]*len(res_phi_e_dofs)))
-					ns_vec.assemble()
-					ns_vec.normalize()
-					assert np.isclose(ns_vec.norm(), 1.0)
+				# Create nullspace object
+				self.nullspace = PETSc.NullSpace().create(vectors=[ns_vec], comm=MPI.comm_world)
+				assert self.nullspace.test(self.A_)
 
-					# Create nullspace object
-					self.nullspace = PETSc.NullSpace().create(vectors=[ns_vec], comm=MPI.comm_world)
-					assert self.nullspace.test(self.A_)
-
-					# Provide PETSc with the nullspace and orthogonalize the right-hand side vector
-					# with respect to the nullspace
-					as_backend_type(self.A_).setNullSpace(self.nullspace)
-					as_backend_type(self.A_).setNearNullSpace(self.nullspace)
-
-				else:
-					# Handle system singularity by pinning the electric potential using
-					# a point Dirichlet BC
-					p.bcs.apply(self.A)		
-
+				# Provide PETSc with the nullspace and orthogonalize the right-hand side vector
+				# with respect to the nullspace
+				as_backend_type(self.A_).setNullSpace(self.nullspace)
+				as_backend_type(self.A_).setNearNullSpace(self.nullspace)
 		else:
 			# Direct solver
 			if p.dirichlet_bcs:
 				# Apply Dirichlet BCs to linear system matrix
 				p.bcs.apply(self.A)
-
+			
 		if self.save_mat:
 				
 			print("Saving output/Amat...")  
@@ -122,7 +115,7 @@ class EMI_solver(object):
 			p.bcs.apply(self.F)
 
 		if not self.direct_solver: 		
-			self.F_ = as_backend_type(self.F).vec()							
+			self.F_ = as_backend_type(self.F).vec()	# TODO this only one?						
 		
 	def setup_solver(self):
 

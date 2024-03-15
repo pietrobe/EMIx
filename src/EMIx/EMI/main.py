@@ -14,7 +14,7 @@ if __name__=='__main__':
 		
 	# global time step (s)	
 	dt = 0.00003
-	time_steps = 100
+	time_steps = 1000
 
 	# grid size
 	N = int(argv[1])
@@ -61,7 +61,7 @@ if __name__=='__main__':
 	problem.add_ionic_model("HH", stim_fun=g_Na_stim)
 
 	# solve
-	solver = EMI_solver(problem, time_steps, True, True)	
+	solver = EMI_solver(problem, time_steps, False, True)	
 	solver.solve()
 
 	# HH.plot_png()
