@@ -1,3 +1,4 @@
+from pathlib import Path
 from EMIx   import *
 from dolfin import *
 
@@ -11,12 +12,13 @@ if __name__=='__main__':
 	dt = 0.00002
 	time_steps = 100
 
-	# input files	
-	input_path  = "../data/myelin/"
-	input_files = {'mesh_file':             input_path + "mesh0.xdmf",\
-				   'facets_file':           input_path + "facets0.xdmf",\
-				   'intra_restriction_dir': input_path + "interior_restriction0.rtc.xdmf",\
-				   'extra_restriction_dir': input_path + "exterior_restriction0.rtc.xdmf"}	
+	# input files
+	file_directory = Path(__file__).parent
+	input_path  = (file_directory.parent / "data/myelin/").absolute().as_posix()
+	input_files = {'mesh_file':             input_path + "/mesh0.xdmf",\
+				   'facets_file':           input_path + "/facets0.xdmf",\
+				   'intra_restriction_dir': input_path + "/interior_restriction0.rtc.xdmf",\
+				   'extra_restriction_dir': input_path + "/exterior_restriction0.rtc.xdmf"}	
 		   	
 	# NOTE: boundary tag is not necessary for Neumann BC		   			   		
 	tags = {'intra': 3 , 'extra': 1, 'membrane': 2}	
