@@ -9,6 +9,7 @@ dependencies:
   - numpy
   - mpich
   - scipy
+  - pytest
   - conda-ecosystem-user-package-isolation
   - pip:
       - "git+https://github.com/multiphenics/multiphenics.git"
