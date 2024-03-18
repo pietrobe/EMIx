@@ -12,5 +12,6 @@ license = {file = "LICENSE"}
 # Direct dependencies
 dependencies = [
     'multiphenics',
-    'matplotlib'
+    'matplotlib',
+    'scipy'
 ]
