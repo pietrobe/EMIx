@@ -1,0 +1,14 @@
+name: EMIx
+channels:
+  - conda-forge
+dependencies:
+  - fenics-dolfin
+  - python=3.10
+  - matplotlib
+  - git
+  - numpy
+  - mpich
+  - scipy
+  - conda-ecosystem-user-package-isolation
+  - pip:
+      - "git+https://github.com/multiphenics/multiphenics.git"
