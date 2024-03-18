@@ -25,7 +25,11 @@ jobs:
       - name: install package
         run: |
           python3 -m pip install .
-
-      - name: Run example
-        run: |
-          python3 ./examples/EMI_example.py
+      
+      - name: Run demos (serial)
+        run: 
+          python3 -m pytest -n=2 -m serial --durations=10 python/demo/test.py
+      
+      - name: Run demos (MPI (np=2))
+        run: 
+          python3 -m pytest -m mpi --num-proc=2 python/demo/test.py
