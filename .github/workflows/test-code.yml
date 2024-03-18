@@ -1,0 +1,41 @@
+name: Test KNP-EMI code
+on:
+  workflow_dispatch:
+  workflow_call:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["**"]
+
+env:
+  DEB_PYTHON_INSTALL_LAYOUT: deb_system
+
+defaults:
+  run:
+    shell: bash -el {0}
+
+jobs:
+  test_scripts:
+    runs-on: ubuntu-latest
+    container: ubuntu:latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup conda-forge
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          activate-environment: EMIx
+          python-version: "3.10"
+          use-mamba: true
+          environment-file: environment.yml
+
+      - name: install package
+        run: |
+          python -m pip install .
+
+      - name: Run test (MMS)
+        run: |
+          python ./examples/EMI_example.py
