@@ -1,4 +1,4 @@
-name: Test KNP-EMI code via docker
+name: Test KNP-EMI CG code via docker
 on:
   workflow_dispatch:
   workflow_call:
