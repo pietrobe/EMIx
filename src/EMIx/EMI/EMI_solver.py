@@ -4,6 +4,7 @@ from EMIx.utils.misc      import dump
 import numpy as np 
 import matplotlib.pyplot as plt
 import time
+from pathlib import Path
 from dolfin       import *
 from multiphenics import *
 from petsc4py     import PETSc
@@ -20,6 +21,10 @@ class EMI_solver(object):
 		# init forms		
 		self.problem.setup_bilinear_form()	
 		self.problem.setup_linear_form()	
+
+		# Init output folder
+		# FIXME: Should be generic
+		Path("output").mkdir(parents=True, exist_ok=True)
 
 		# output files		
 		self.save_xdmf_files = save_xdmf_files
