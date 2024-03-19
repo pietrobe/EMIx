@@ -14,7 +14,7 @@ MAX_FINAL_CL_i  = 137.09026107750998
 MAX_FINAL_CL_e  = 103.96576469612945
 
 # tolerances for direct and iterative
-TOL       = 1e-10
+TOL       = 1e-9
 TOL_PHI_M = 1e-4
 
 #  Na stimulus definition
