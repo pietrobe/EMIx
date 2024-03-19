@@ -1,5 +1,6 @@
-from EMIx   import *
-from dolfin import *
+from EMIx    import *
+from dolfin  import *
+from pathlib import Path
 
 
 # values from direct solve at t = T

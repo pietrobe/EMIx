@@ -1,5 +1,6 @@
-from EMIx   import *
-from dolfin import *
+from EMIx    import *
+from dolfin  import *
+from pathlib import Path
 
 # final membrane potential (hardcoded)
 FINAL_PHI_M = 30.30931388
