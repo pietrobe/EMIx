@@ -41,7 +41,7 @@ if __name__=='__main__':
 
 	# solve with both .xdmf and .png output
 	solver = KNPEMI_solver(problem, time_steps=50, save_xdmf_files=False, save_png_files=True)
-	solver.ksp_rtol = 1e-11
+	solver.ksp_rtol = 1e-10
 	solver.solve()
 
 	# testing direct solve
