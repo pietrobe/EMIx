@@ -1,17 +1,15 @@
-from pathlib import Path
 from EMIx   import *
 from dolfin import *
+
+# final membrane potential (hardcoded)
+FINAL_PHI_M = 30.30931388
 
 #  Na stimulus definition
 def g_Na_stim(g_syn_bar, a_syn, t):			
 	return Expression('g_syn_bar*exp(-fmod(t,0.01)/a_syn)', g_syn_bar=g_syn_bar, a_syn=a_syn, t=t, degree=4)				
 
 if __name__=='__main__':
-		
-	# global time step (s)	
-	dt = 0.00002
-	time_steps = 50
-
+			
 	# input files
 	input_files = {'mesh_file':             "../../data/square/square32.xml", \
 		 		   'subdomais_file': 		"../../data/square/square_physical_region32.xml", \
@@ -23,14 +21,20 @@ if __name__=='__main__':
 	tags = {'intra': 1 , 'extra': 2, 'membrane': 2}	
 		
 	# create EMI problem and ionic model
-	problem = EMI_problem(input_files, tags, dt)	
+	problem = EMI_problem(input_files, tags, dt=0.00002)	
 
 	# add HH ionic model
 	problem.add_ionic_model("HH", stim_fun=g_Na_stim)
 
 	# solve with just .png output
-	solver = EMI_solver(problem, time_steps)	
+	solver = EMI_solver(problem, time_steps=50, save_xdmf_files=False, save_png_files=True)	
 	solver.solve()
+	
+	# test
+	final_err_v = abs(solver.v_t[-1] - FINAL_PHI_M)
+	print(final_err_v)
+	assert final_err_v < solver.ksp_rtol
+
 
 	
 

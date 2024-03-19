@@ -396,6 +396,7 @@ class EMI_solver(object):
 		plt.xlabel('time (ms)')
 		plt.ylabel('membrane potential (mV)')
 		plt.savefig(self.out_v_string)
+		
 
 
 	# solvers parameters

@@ -566,6 +566,7 @@ class KNPEMI_solver(object):
 		plt.ylabel('Time (s)')
 		plt.savefig(self.out_file_prefix + 'timings.png')
 
+	
 	def init_xdmf_savefile(self):
 
 		# write tag data
@@ -659,6 +660,7 @@ class KNPEMI_solver(object):
 
 		return
 
+	
 	def close_xdmf(self):
 
 		self.xdmf_file.close()		
@@ -669,14 +671,14 @@ class KNPEMI_solver(object):
 		return	
 	
 	# solvers parameters
-	direct_solver  = False
-	ksp_rtol   	   = 1e-6
-	ksp_max_it     = 1000
-	ksp_type   	   = 'gmres'
-	pc_type    	   = 'hypre'
-	norm_type  	   = 'preconditioned'
-	max_amg_iter   = 1
-	use_P_mat      = True
+	direct_solver  	   = False
+	ksp_rtol   	   	   = 1e-6
+	ksp_max_it     	   = 1000
+	ksp_type   	   	   = 'gmres'
+	pc_type    	       = 'hypre'
+	norm_type  	       = 'preconditioned'
+	max_amg_iter       = 1
+	use_P_mat          = True
 	use_block_Jacobi   = True
 	nonzero_init_guess = True 
 
@@ -686,7 +688,7 @@ class KNPEMI_solver(object):
 	time_adaptive     = False
 
 	# handling pure Neumann boundary conditions
-	set_nullspace = True  # True = provide linear solver with the nullspace of the system matrix,
+	set_nullspace = False  # True = provide linear solver with the nullspace of the system matrix,
 						  # False = pin the solution with a point Dirichlet BC
 
 	# output parameters
