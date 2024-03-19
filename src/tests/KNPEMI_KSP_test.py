@@ -15,7 +15,6 @@ MAX_FINAL_CL_e  = 103.96576469612945
 # tolerances for direct and iterative
 TOL = 1e-2
 
-
 #  Na stimulus definition
 def g_Na_stim(g_syn_bar, a_syn, t):			
 	return Expression('g_syn_bar*exp(-fmod(t,0.01)/a_syn)', g_syn_bar=g_syn_bar, a_syn=a_syn, t=t, degree=4)				
@@ -74,12 +73,12 @@ if __name__=='__main__':
 	err_K_e  = abs(MAX_FINAL_K_e  - ue_K_max) /abs(ue_K_max)
 	err_Cl_e = abs(MAX_FINAL_CL_e - ue_Cl_max)/abs(ue_Cl_max)
 
-	# print(err_Na_i)
-	# print(err_Na_e)
-	# print(err_K_i)
-	# print(err_K_e)
-	# print(err_Cl_i)
-	# print(err_Cl_e)
+	print(err_Na_i)
+	print(err_Na_e)
+	print(err_K_i)
+	print(err_K_e)
+	print(err_Cl_i)
+	print(err_Cl_e)
 
 	# tests
 	assert err_Na_i < TOL

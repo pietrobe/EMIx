@@ -75,12 +75,12 @@ if __name__=='__main__':
 	err_K_e  = abs(MAX_FINAL_K_e  - ue_K_max) /abs(ue_K_max)
 	err_Cl_e = abs(MAX_FINAL_CL_e - ue_Cl_max)/abs(ue_Cl_max)
 
-	# print(err_Na_i)
-	# print(err_Na_e)
-	# print(err_K_i)
-	# print(err_K_e)
-	# print(err_Cl_i)
-	# print(err_Cl_e)
+	print(err_Na_i)
+	print(err_Na_e)
+	print(err_K_i)
+	print(err_K_e)
+	print(err_Cl_i)
+	print(err_Cl_e)
 
 	# tests
 	assert err_Na_i < TOL
