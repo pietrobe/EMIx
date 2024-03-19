@@ -15,10 +15,9 @@ path = pathlib.Path(__file__).resolve().parent
 
 # Build list of demo programs
 demos = []
-demo_files = list(path.glob("**/*.py"))
+demo_files = list(path.glob("**/*_test.py"))
 for f in demo_files:
     demos.append((f.parent, f.name))
-
 
 @pytest.mark.serial
 @pytest.mark.parametrize("path,name", demos)

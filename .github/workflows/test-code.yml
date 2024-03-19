@@ -38,8 +38,8 @@ jobs:
 
       - name: Run demos (serial)
         run: 
-          python3 -m pytest -m serial ./examples/test.py
+          python3 -m pytest -m serial -v ./src/tests/test.py
       
       - name: Run demos (MPI (np=2))
         run: 
-          python3 -m pytest -m mpi --num-proc=2 ./examples/test.py
+          python3 -m pytest -m mpi --num-proc=2 -v ./src/tests/test.py

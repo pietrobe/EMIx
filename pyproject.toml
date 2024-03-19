@@ -15,3 +15,11 @@ dependencies = [
     'matplotlib',
     'scipy'
 ]
+
+# testing markers (optional)
+[tool.pytest.ini_options]
+markers = [
+    "serial: serial test.",
+    "mpi: parallel test."
+]
+
