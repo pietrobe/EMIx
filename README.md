@@ -2,10 +2,6 @@
 
 Framework for parallel simulations of EMI and KNP-EMI models in complex geometries. 
 
-Video:
-
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/ZMBpdS7VYNU/0.jpg)](https://www.youtube.com/watch?v=ZMBpdS7VYNU)
-
 ## Dependencies
 
 * FEniCS (www.fenicsproject.org)
@@ -78,4 +74,7 @@ Further informations in *data/README.md* and *examples/data/README.md*.
 ## Miscellaneous
 
 If you run into memory issues in the form of segmentation faults or out-of-memory errors, check the memory limits of your Docker container, which may be set lower than the available system memory.
+
+## Example video
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/ZMBpdS7VYNU/0.jpg)](https://www.youtube.com/watch?v=ZMBpdS7VYNU)
 
