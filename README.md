@@ -2,6 +2,8 @@
 
 Framework for parallel simulations of EMI and KNP-EMI models in complex geometries. 
 
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/ZMBpdS7VYNU/0.jpg)](https://www.youtube.com/watch?v=ZMBpdS7VYNU)
+
 ## Dependencies
 
 * FEniCS (www.fenicsproject.org)
