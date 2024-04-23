@@ -13,14 +13,15 @@ from petsc4py     import PETSc
 class EMI_solver(object):
 
 	# constructor
-	def __init__(self, EMI_problem, time_steps, save_xdmf_files=False, save_png_files=False):
+	def __init__(self, EMI_problem, time_steps, save_xdmf_files=False, save_svg_files=False):
 		
 		self.problem    = EMI_problem
 		self.time_steps = time_steps		
 
-		# init forms		
+		# init forms
+		self.problem.setup_linear_form()
 		self.problem.setup_bilinear_form()	
-		self.problem.setup_linear_form()	
+			
 
 		# Init output folder
 		# FIXME: Should be generic
@@ -28,10 +29,10 @@ class EMI_solver(object):
 
 		# output files		
 		self.save_xdmf_files = save_xdmf_files
-		self.save_png_files  = save_png_files
+		self.save_svg_files  = save_svg_files
 		
 		if self.save_xdmf_files: self.init_xdmf()   		    		
-		if self.save_png_files:  self.init_png()   		    		
+		if self.save_svg_files:  self.init_svg()   		    		
 		if self.save_mat:  self.time_steps = 1		
 
 		# ininit ionic models 
@@ -101,8 +102,8 @@ class EMI_solver(object):
 	
 		if self.save_mat:
 				
-			print("Saving output/Amat...")  
-			dump(self.A.mat(),'output/Amat')	
+			print("Saving src/EMIx/EMI/output/CLmyel/Amat...")  
+			dump(self.A.mat(),'src/EMIx/EMI/output/CLmyel/Amat')	
 			exit()												
 			
 	def assemble_rhs(self, init=True):
@@ -174,16 +175,19 @@ class EMI_solver(object):
 		dt     = p.dt
 		wh     = p.wh		
 		V      = p.V
+		implicit = self.implicit 
 
 		# setup
 		self.setup_solver()	
 
-		# assemble linear system matrix
-		tic = time.perf_counter()		
-		self.assemble()								
-								
-		if MPI.comm_world.rank == 0: print(f"Assembly in {time.perf_counter() - tic:0.4f} seconds")   			
-		self.assembly_time.append(time.perf_counter() - tic)				
+		if implicit == False:
+
+			# assemble linear system matrix
+			tic = time.perf_counter()		
+			self.assemble()								
+									
+			if MPI.comm_world.rank == 0: print(f"Assembly in {time.perf_counter() - tic:0.4f} seconds")   			
+			self.assembly_time.append(time.perf_counter() - tic)				
 						
 		# Time-stepping
 		for i in range(self.time_steps):			
@@ -200,7 +204,19 @@ class EMI_solver(object):
 			tic = time.perf_counter()		
 			p.setup_linear_form()	
 			if MPI.comm_world.rank == 0: print(f"Setup linear form in {time.perf_counter() - tic:0.4f} seconds")   			
-			self.setup_time.append(time.perf_counter() - tic)								
+			self.setup_time.append(time.perf_counter() - tic)
+
+			if implicit:
+								
+				# setup bilinear form
+				p.setup_bilinear_form()
+
+				# assemble bilinear form
+				tic = time.perf_counter()		
+				self.assemble()
+
+				if MPI.comm_world.rank == 0: print(f"Assembly in {time.perf_counter() - tic:0.4f} seconds")   			
+				self.assembly_time.append(time.perf_counter() - tic)								
 			
 			# assemble rhs
 			tic = time.perf_counter()		
@@ -233,7 +249,7 @@ class EMI_solver(object):
 			####### write output #######
 			
 			if self.save_xdmf_files: self.save_xdmf()
-			if self.save_png_files:  self.save_png()
+			if self.save_svg_files:  self.save_svg()
 				
 			if not self.direct_solver:
 				self.iterations.append(self.ksp.getIterationNumber())
@@ -258,7 +274,7 @@ class EMI_solver(object):
 
 				# close output files
 				if self.save_xdmf_files: self.close_xdmf()
-				if self.save_png_files:  self.plot_png()
+				if self.save_svg_files:  self.plot_svg()
 		
 	
 	# print some infos
@@ -297,7 +313,7 @@ class EMI_solver(object):
 				print('Average iterations: ' + str(sum(self.iterations)/len(self.iterations)))				
 
 			if self.save_xdmf_files: print('\nSaving XDMF files in output folder...')				
-			if self.save_png_files:  print('\nSaving PNG files in output folder...\n')				
+			if self.save_svg_files:  print('\nSaving SVG files in output folder...\n')				
 
 
 		
@@ -305,12 +321,12 @@ class EMI_solver(object):
 	def init_xdmf(self):
 
 		# write tag data		
-		xdmf_file = XDMFFile(MPI.comm_world, 'output/subdomains.xdmf')
+		xdmf_file = XDMFFile(MPI.comm_world, 'src/EMIx/EMI/output/CLmyel/subdomains.xdmf')
 		xdmf_file.write(self.problem.subdomains)	
 		xdmf_file.close()			
 
 		# write solution
-		self.xdmf_file = XDMFFile(MPI.comm_world, "output/solution.xdmf")		
+		self.xdmf_file = XDMFFile(MPI.comm_world, "src/EMIx/EMI/output/CLmyel/solution.xdmf")		
 
 		self.xdmf_file.parameters['functions_share_mesh' ] = True
 		self.xdmf_file.parameters['rewrite_function_mesh'] = False
@@ -336,7 +352,7 @@ class EMI_solver(object):
 		self.xdmf_file.close()		
 
 	
-	def init_png(self):
+	def init_svg(self):
 
 		p = self.problem
 
@@ -368,10 +384,10 @@ class EMI_solver(object):
 		# potential
 		self.v_t = []
 		self.v_t.append(1000 *local_phi[self.point_to_plot]) # converting to mV 		
-		self.out_v_string = 'output/v.png'					
+		self.out_v_string = 'src/EMIx/EMI/output/CLmyel/v.svg'					
 
 
-	def save_png(self):
+	def save_svg(self):
 		
 		p = self.problem
 
@@ -384,7 +400,7 @@ class EMI_solver(object):
 
 		self.v_t.append(1000 * local_phi[self.point_to_plot]) # converting to mV 
 
-	def plot_png(self):
+	def plot_svg(self):
 		
 		# aliases
 		dt = float(self.problem.dt)
@@ -393,6 +409,8 @@ class EMI_solver(object):
 		# save plot of membrane potential
 		plt.figure(0)
 		plt.plot(np.linspace(0, 1000*time_steps*dt, time_steps + 1), self.v_t)
+		plt.xlim(-1, 11)
+		plt.ylim(-100, 60)  
 		plt.xlabel('time (ms)')
 		plt.ylabel('membrane potential (mV)')
 		plt.savefig(self.out_v_string)
@@ -407,10 +425,11 @@ class EMI_solver(object):
 	norm_type  	   = 'preconditioned'	
 	nonzero_init_guess = True 
 	verbose            = False
+	implicit = True
 	
 	# output parameters	
 	save_mat        = False
 
 	# handling pure Neumann boundary conditions
-	set_nullspace = False  # True = provide linear solver with the nullspace of the system matrix,
+	set_nullspace = True  # True = provide linear solver with the nullspace of the system matrix,
             			   # False = pin the solution with a point Dirichlet BC

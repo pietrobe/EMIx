@@ -238,8 +238,31 @@ class HH_model(Ionic_model):
 			ion['g_k'] += p.g_K_bar*p.n**4				
 		
 		I_ch = ion['g_k']*(phi_M - ion['E'])
+		g_E = ion['g_k']*ion['E']
 		
-		return I_ch
+		return I_ch, g_E
+	
+	def get_g_tot(self):	
+
+		# aliases		
+		p     = self.problem
+		
+		g_tot = 0
+		
+		for idx, ion in enumerate(p.ion_list):
+
+			# leak currents
+			g_tot = ion['g_leak']
+
+			# stimulus and gating
+			if ion['name'] == 'Na':
+				g_tot += self.g_Na_stim(p.g_syn_bar, p.a_syn, float(p.t)) 
+				g_tot += p.g_Na_bar*p.m**3*p.h
+
+			elif ion['name'] == 'K':
+				g_tot += p.g_K_bar*p.n**4				
+			
+		return g_tot
 
 
 	def update_gating_variables(self):		
@@ -304,9 +327,3 @@ class HH_model(Ionic_model):
 
 		toc = time.perf_counter()
 		if MPI.comm_world.rank == 0: print(f"ODE step in {toc - tic:0.4f} seconds")   	
-			
-	
-
-
-
-

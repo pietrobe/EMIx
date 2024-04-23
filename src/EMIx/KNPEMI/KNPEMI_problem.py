@@ -129,8 +129,9 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 		F   = self.F
 		psi = self.psi
 		C_M = self.C_M
-		t   = float(self.t)		
-		
+		t   = float(self.t)
+		implicit = self.implicit
+
 		if np.isclose(t,0): self.phi_M_prev = interpolate(self.phi_M_init, self.V.sub(self.N_ions).collapse())                  
 				
 		if MPI.comm_world.rank == 0: print('Setting up variational form...') 
@@ -193,9 +194,11 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 		alpha_e_sum = 0 # sum of fractions extracellular		
 		J_phi_i = 0     # total intracellular flux
 		J_phi_e = 0     # total extracellular flux   
+		E_tot = 0
 
 		# total channel current     
-		I_ch = dict.fromkeys(self.gamma_tags, 0)		
+		I_ch = dict.fromkeys(self.gamma_tags, 0)
+		g_E = dict.fromkeys(self.gamma_tags, 0) 		
 		
 		# Initialize parts of variational formulation
 		for idx, ion in enumerate(self.ion_list):
@@ -204,6 +207,9 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 			z  = ion['z' ]; 
 			Di = ion['Di']; 
 			De = ion['De'];
+
+			if implicit:
+				g_tot = self.ionic_models[0].get_g_tot()		
 
 			# set initial value of intra and extracellular ion concentrations
 			if t == 0:
@@ -217,6 +223,8 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 			# calculate and update Nernst potential for current ion
 			ion['E'] = (psi/z)*ln(ue_p.sub(idx)/ui_p.sub(idx))		
 
+			E_tot += ion['E']
+
 			# init dictionary of ionic channel
 			ion['I_ch'] = dict.fromkeys(self.gamma_tags) 			
 						
@@ -226,7 +234,9 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 				# loop over ionic model tags
 				for gamma_tag in model.tags:	
 										
-					ion['I_ch'][gamma_tag] = model._eval(idx)						
+					ion['I_ch'][gamma_tag] = model._eval(idx)[0]
+
+					g_E[gamma_tag] += model._eval(idx)[1]						
 
 					# add contribution to total channel current							
 					I_ch[gamma_tag] += ion['I_ch'][gamma_tag]										
@@ -271,21 +281,39 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 			C_i = C_M*alpha_i('-')/(F*z)
 			C_e = C_M*alpha_e('-')/(F*z)
 
-			# weak form - equation for k_i
-			a00 += ki*vki*dxi - dt * inner(Ji, grad(vki))*dxi + C_i * inner(phi_i('-'),vki('-'))*dS
-			a01 += - C_i * inner(phi_e('-'),vki('-'))*dS
-			L0  += ki_prev*vki*dxi
+			if implicit:
+				# weak form - equation for k_i
+				a00 += ki*vki*dxi - dt * inner(Ji, grad(vki))*dxi + (C_i + (g_tot*dt)/(F*z)) * inner(phi_i('-'),vki('-'))*dS
+				a01 += - (C_i + (g_tot*dt)/(F*z)) * inner(phi_e('-'),vki('-'))*dS
+				L0  += ki_prev*vki*dxi
 
-			# weak form - equation for k_e
-			a11 += ke*vke*dxe - dt * inner(Je, grad(vke))*dxe + C_e * inner(phi_e('-'),vke('-'))*dS
-			a10 += - C_e * inner(phi_i('-'),vke('-'))*dS
-			L1  += ke_prev*vke*dxe 
+				# weak form - equation for k_e
+				a11 += ke*vke*dxe - dt * inner(Je, grad(vke))*dxe + (C_e + (g_tot*dt)/(F*z)) * inner(phi_e('-'),vke('-'))*dS
+				a10 += - (C_e + (g_tot*dt)/(F*z)) * inner(phi_i('-'),vke('-'))*dS
+				L1  += ke_prev*vke*dxe 
 
-			# ionic channels (can be in dS subset)
-			for gamma_tag in self.gamma_tags:						
+				# ionic channels (can be in dS subset)
+				for gamma_tag in self.gamma_tags:						
 
-				L0 -= (dt*I_ch_k[gamma_tag] - alpha_i('-')*C_M*self.phi_M_prev)/(F*z)*vki('-')*dS(gamma_tag)
-				L1 += (dt*I_ch_k[gamma_tag] - alpha_e('-')*C_M*self.phi_M_prev)/(F*z)*vke('-')*dS(gamma_tag)
+					L0 += (dt*g_E[gamma_tag] + alpha_i('-')*C_M*self.phi_M_prev)/(F*z)*vki('-')*dS(gamma_tag)
+					L1 -= (dt*g_E[gamma_tag] + alpha_e('-')*C_M*self.phi_M_prev)/(F*z)*vke('-')*dS(gamma_tag)
+
+			else:
+				# weak form - equation for k_i
+				a00 += ki*vki*dxi - dt * inner(Ji, grad(vki))*dxi + C_i * inner(phi_i('-'),vki('-'))*dS
+				a01 += - C_i * inner(phi_e('-'),vki('-'))*dS
+				L0  += ki_prev*vki*dxi
+
+				# weak form - equation for k_e
+				a11 += ke*vke*dxe - dt * inner(Je, grad(vke))*dxe + C_e * inner(phi_e('-'),vke('-'))*dS
+				a10 += - C_e * inner(phi_i('-'),vke('-'))*dS
+				L1  += ke_prev*vke*dxe 
+
+				# ionic channels (can be in dS subset)
+				for gamma_tag in self.gamma_tags:						
+
+					L0 -= (dt*I_ch_k[gamma_tag] - alpha_i('-')*C_M*self.phi_M_prev)/(F*z)*vki('-')*dS(gamma_tag)
+					L1 += (dt*I_ch_k[gamma_tag] - alpha_e('-')*C_M*self.phi_M_prev)/(F*z)*vke('-')*dS(gamma_tag)
 						
 			# add contribution to total current flux
 			J_phi_i += z*Ji
@@ -314,18 +342,33 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 				L1 -=  dt*inner(dot(ion['J_k_e'], self.n_outer('-')), vke('-')   )*dsOuter # eq for k_e
 				L1 += F*z*inner(dot(ion['J_k_e'], self.n_outer('-')), vphi_e('-'))*dsOuter # eq for phi_e		
 
-		# weak form - equation for phi_i		
-		a00 -= inner(J_phi_i, grad(vphi_i))*dxi - (C_M/(F*dt)) * inner(phi_i('-'),vphi_i('-'))*dS
-		a01 -= (C_M/(F*dt)) * inner(phi_e('-'),vphi_i('-'))*dS		
-		
-		# weak form - equation for phi_e
-		a11 -= inner(J_phi_e, grad(vphi_e))*dxe - (C_M/(F*dt)) * inner(phi_e('-'),vphi_e('-'))*dS
-		a10 -= (C_M/(F*dt)) * inner(phi_i('-'),vphi_e('-'))*dS		
+		if implicit:
+			# weak form - equation for phi_i		
+			a00 -= inner(J_phi_i, grad(vphi_i))*dxi - (C_M/(F*dt) + g_tot/F) * inner(phi_i('-'),vphi_i('-'))*dS
+			a01 -= (C_M/(F*dt) + g_tot/F) * inner(phi_e('-'),vphi_i('-'))*dS		
+			
+			# weak form - equation for phi_e
+			a11 -= inner(J_phi_e, grad(vphi_e))*dxe - (C_M/(F*dt) + g_tot/F) * inner(phi_e('-'),vphi_e('-'))*dS
+			a10 -= (C_M/(F*dt) + g_tot/F) * inner(phi_i('-'),vphi_e('-'))*dS		
 
-		for gamma_tag in self.gamma_tags:				
+			for gamma_tag in self.gamma_tags:				
 
-			L0  -= (1/F)*(I_ch[gamma_tag] - C_M*self.phi_M_prev/dt)*vphi_i('-')*dS(gamma_tag)
-			L1  += (1/F)*(I_ch[gamma_tag] - C_M*self.phi_M_prev/dt)*vphi_e('-')*dS(gamma_tag)
+				L0  -= (1/F)*(E_tot - C_M*self.phi_M_prev/dt)*vphi_i('-')*dS(gamma_tag)
+				L1  += (1/F)*(E_tot - C_M*self.phi_M_prev/dt)*vphi_e('-')*dS(gamma_tag)
+
+		else:
+			# weak form - equation for phi_i		
+			a00 -= inner(J_phi_i, grad(vphi_i))*dxi - (C_M/(F*dt)) * inner(phi_i('-'),vphi_i('-'))*dS
+			a01 -= (C_M/(F*dt)) * inner(phi_e('-'),vphi_i('-'))*dS		
+			
+			# weak form - equation for phi_e
+			a11 -= inner(J_phi_e, grad(vphi_e))*dxe - (C_M/(F*dt)) * inner(phi_e('-'),vphi_e('-'))*dS
+			a10 -= (C_M/(F*dt)) * inner(phi_i('-'),vphi_e('-'))*dS		
+
+			for gamma_tag in self.gamma_tags:				
+
+				L0  -= (1/F)*(I_ch[gamma_tag] - C_M*self.phi_M_prev/dt)*vphi_i('-')*dS(gamma_tag)
+				L1  += (1/F)*(I_ch[gamma_tag] - C_M*self.phi_M_prev/dt)*vphi_e('-')*dS(gamma_tag)
 
 		if self.MMS_test:
 			# phi source terms					
@@ -475,7 +518,7 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 	def setup_MMS_params(self):
 
 		self.dirichlet_bcs       = True		
-		self.m_conversion_factor = 1
+		self.m_conversion_factor = 1e-6
 		
 		self.C_M = 1
 		self.F   = 1
@@ -617,7 +660,7 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 	### class variables ###	
 	
 	# physical parameters
-	C_M = 0.02                       # capacitance (F)
+	C_M = 0.01                       # capacitance (F)
 	T   = 300                        # temperature (K)
 	F   = 96485                      # Faraday's constant (C/mol)
 	R   = 8.314                      # Gas constant (J/(K*mol))
@@ -686,3 +729,6 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 
 	# Dirichlet boundary condition on the electric potentials
 	dirichlet_bcs = False
+
+	# myelin
+	implicit = True

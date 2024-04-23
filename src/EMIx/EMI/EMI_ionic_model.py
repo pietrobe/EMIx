@@ -53,12 +53,12 @@ class HH_model(Ionic_model):
 	h_init = Constant(0.68848921811) # gating variable h
 
 	# conductivities
-	g_Na_bar  = 1200                 # Na max conductivity (S/m**2)
-	g_K_bar   = 360                  # K max conductivity (S/m**2)    
-	g_Na_leak = Constant(2.0*0.5)    # Na leak conductivity (S/m**2)
-	g_K_leak  = Constant(8.0*0.5)    # K leak conductivity (S/m**2)
+	g_Na_bar  = 1200*10                 # Na max conductivity (S/m**2)
+	g_K_bar   = 360*10                  # K max conductivity (S/m**2)    
+	g_Na_leak = Constant(2.0*0.5*10)    # Na leak conductivity (S/m**2)
+	g_K_leak  = Constant(8.0*0.5*10)    # K leak conductivity (S/m**2)
 	g_Cl_leak = Constant(0.0)        # Cl leak conductivity (S/m**2)	
-	g_syn_bar = 40                   # synaptic conductivity (S/m**2)	
+	g_syn_bar = 40*10                   # synaptic conductivity (S/m**2)	
 	V_rest    = -0.065               # resting membrane potential
 	E_Na      = 54.8e-3              # reversal potential Na (V)
 	E_K       = -88.98e-3            # reversal potential K (V)
@@ -71,8 +71,8 @@ class HH_model(Ionic_model):
 	use_Rush_Lar   = True
 	time_steps_ODE = 26
 
-	# save gating in PNG	
-	save_png_file = True		
+	# save gating in svg	
+	save_svg_file = True		
 		
 
 	def __init__(self, EMI_problem, tags=None, stim_fun=g_syn_none):
@@ -99,13 +99,13 @@ class HH_model(Ionic_model):
 			self.h = interpolate(self.h_init, p.V)	
 
 			# output
-			if self.save_png_file: self.init_png()
+			if self.save_svg_file: self.init_svg()
 
 		else:
 			self.update_gating_variables()	
 
 			# output
-			if self.save_png_file: self.save_png()					
+			if self.save_svg_file: self.save_svg()					
 		
 		# conductivities
 		g_Na = self.g_Na_leak + self.g_Na_bar*self.m**3*self.h
@@ -122,8 +122,28 @@ class HH_model(Ionic_model):
 		
 		# total current
 		I_ch = I_ch_Na + I_ch_K + I_ch_Cl
+
+		I_E = g_Na*self.E_Na + g_K*self.E_K + g_Cl*self.E_Cl
 		
-		return I_ch
+		return I_ch, I_E
+	
+
+	def get_g_tot(self):
+
+		# aliases		
+		p = self.problem						
+	
+		# conductivities
+		g_Na = self.g_Na_leak + self.g_Na_bar*self.m**3*self.h
+		g_K  = self.g_K_leak  + self.g_K_bar*self.n**4				
+		g_Cl = self.g_Cl_leak
+
+		# stimulus
+		g_Na += self.g_Na_stim(self.g_syn_bar, self.a_syn, float(p.t))
+
+		g_tot = g_Na + g_K + g_Cl
+	
+		return g_tot
 
 
 	def update_gating_variables(self):			
@@ -187,7 +207,7 @@ class HH_model(Ionic_model):
 		if MPI.comm_world.rank == 0: print(f"ODE step in {toc - tic:0.4f} seconds")   	
 
 
-	def init_png(self):
+	def init_svg(self):
 
 		p = self.problem
 
@@ -226,10 +246,10 @@ class HH_model(Ionic_model):
 		self.m_t.append(local_m[self.point_to_plot]) 
 		self.h_t.append(local_h[self.point_to_plot]) 
 		
-		self.out_gate_string = 'output/gating.png'
+		self.out_gate_string = 'src/EMIx/EMI/output/CLmyel/gating.svg'
 			
 
-	def save_png(self):
+	def save_svg(self):
 		
 		p = self.problem
 
@@ -247,7 +267,7 @@ class HH_model(Ionic_model):
 		self.h_t.append(local_h[self.point_to_plot]) 
 
 
-	def plot_png(self):
+	def plot_svg(self):
 		
 		# aliases
 		dt = float(self.problem.dt)

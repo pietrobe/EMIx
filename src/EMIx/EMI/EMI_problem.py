@@ -117,7 +117,11 @@ class EMI_problem(Mixed_dimensional_problem):
 		dt   = self.dt 
 		C_M  = self.C_M
 		sigma_i  = self.sigma_i
-		sigma_e  = self.sigma_e	
+		sigma_e  = self.sigma_e
+		implicit  = self.implicit 
+
+		if implicit:
+			g_tot = self.ionic_models[0].get_g_tot()
 					
 		if MPI.comm_world.rank == 0: print('Setting up bilinear form...') 
 
@@ -136,10 +140,16 @@ class EMI_problem(Mixed_dimensional_problem):
 		(ui, ue) = block_split(uu)
 		(vi, ve) = block_split(vv)
 
-		a11 = inner(sigma_i*grad(ui), grad(vi))*dxi + (C_M/dt) * inner(ui('-'), vi('-'))*dS
-		a22 = inner(sigma_e*grad(ue), grad(ve))*dxe + (C_M/dt) * inner(ue('+'), ve('+'))*dS
-		a12 = - (C_M/dt) * inner(ue('+'), vi('-'))*dS
-		a21 = - (C_M/dt) * inner(ui('-'), ve('+'))*dS
+		if implicit: 
+			a11 = inner(sigma_i*grad(ui), grad(vi))*dxi + (C_M/dt + g_tot) * inner(ui('-'), vi('-'))*dS
+			a22 = inner(sigma_e*grad(ue), grad(ve))*dxe + (C_M/dt + g_tot) * inner(ue('+'), ve('+'))*dS 
+			a12 = - (C_M/dt + g_tot) * inner(ue('+'), vi('-'))*dS 
+			a21 = - (C_M/dt + g_tot) * inner(ui('-'), ve('+'))*dS 
+		else:
+			a11 = inner(sigma_i*grad(ui), grad(vi))*dxi + (C_M/dt) * inner(ui('-'), vi('-'))*dS 
+			a22 = inner(sigma_e*grad(ue), grad(ve))*dxe + (C_M/dt) * inner(ue('+'), ve('+'))*dS 
+			a12 = - (C_M/dt) * inner(ue('+'), vi('-'))*dS 
+			a21 = - (C_M/dt) * inner(ui('-'), ve('+'))*dS 
 
 		
 		self.a = [[a11, a12],
@@ -153,9 +163,10 @@ class EMI_problem(Mixed_dimensional_problem):
 		C_M      = self.C_M		
 		source_i = self.source_i
 		source_e = self.source_e
-		t        = float(self.t)				
+		t        = float(self.t)
+		implicit = self.implicit
 
-		if np.isclose(t,0): self.phi_M = interpolate(self.phi_M_init, self.V)                  
+		if np.isclose(t,0): self.phi_M = interpolate(self.phi_M_init, self.V)
 
 		# update source term (Needed?)
 		# source_i.t = self.t   
@@ -178,37 +189,56 @@ class EMI_problem(Mixed_dimensional_problem):
 		fi = inner(source_i, vi)*dxi
 		fe = inner(source_e, ve)*dxe
 
-		# init dictionary for ionic channel
-		I_ch = dict.fromkeys(self.gamma_tags) 			
-						
-		# loop over ionic models
-		for model in self.ionic_models:										
+		if implicit:
+			# init dictionary for ionic channel
+			I_E = dict.fromkeys(self.gamma_tags) 			
 
-			# loop over ionic model tags
-			for gamma_tag in model.tags:	
-										
-				I_ch[gamma_tag] = model._eval()						
+			# loop over ionic models
+			for model in self.ionic_models:	
 
+				# loop over ionic model tags
+				for gamma_tag in model.tags:	
+											
+					I_E[gamma_tag] = model._eval()[1]	
 
-		for gamma_tag in self.gamma_tags:
+			for gamma_tag in self.gamma_tags:
 
-			fg = self.phi_M - (dt/C_M) * I_ch[gamma_tag]						
+				fg = self.phi_M + (dt/C_M) * I_E[gamma_tag]					
 
-			fi += (C_M/dt) * inner(fg, vi('-'))*dS(gamma_tag)
-			fe -= (C_M/dt) * inner(fg, ve('+'))*dS(gamma_tag)		
-		
+				fi += (C_M/dt) * inner(fg, vi('-'))*dS(gamma_tag)
+				fe -= (C_M/dt) * inner(fg, ve('+'))*dS(gamma_tag)
+
+		else:
+			# init dictionary for ionic channel
+			I_ch = dict.fromkeys(self.gamma_tags) 			
+							
+			# loop over ionic models
+			for model in self.ionic_models:										
+
+				# loop over ionic model tags
+				for gamma_tag in model.tags:	
+											
+					I_ch[gamma_tag] = model._eval()[0]						
+
+			for gamma_tag in self.gamma_tags:
+
+				fg = self.phi_M - (dt/C_M) * I_ch[gamma_tag]						
+
+				fi += (C_M/dt) * inner(fg, vi('-'))*dS(gamma_tag)
+				fe -= (C_M/dt) * inner(fg, ve('+'))*dS(gamma_tag)
+
 		self.f =  [fi, fe]
-					
+
 
 	### class variables ###
 		
 	# physical parameters
 	C_M     = 0.01
-	sigma_i = 1.0
-	sigma_e = 1.0
+	sigma_i = 2.011202
+	sigma_e = 1.31365
 	
 	# set scaling factor
-	m_conversion_factor = 1
+	m_conversion_factor = 1e-6
 
 	# forcing factors
 	source_i = Constant(0.0)
@@ -225,3 +255,6 @@ class EMI_problem(Mixed_dimensional_problem):
 
 	# BC
 	dirichlet_bcs = False
+
+	# myelin
+	implicit = True

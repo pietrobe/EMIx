@@ -12,13 +12,13 @@ from petsc4py     import PETSc
 class KNPEMI_solver(object):
 
 	# constructor
-	def __init__(self, KNPEMI_problem, time_steps, save_xdmf_files=False, save_png_files=False, save_mat=False):
+	def __init__(self, KNPEMI_problem, time_steps, save_xdmf_files=False, save_svg_files=False, save_mat=False):
 
 		# init variables 
 		self.problem    = KNPEMI_problem
 		self.time_steps = time_steps	
 		self.save_xdmfs = save_xdmf_files	
-		self.save_pngs  = save_png_files	
+		self.save_svgs  = save_svg_files	
 		self.save_mat   = save_mat	
 
 		# init variational form
@@ -26,7 +26,7 @@ class KNPEMI_solver(object):
 			
 		# output files		
 		if self.save_xdmfs: self.init_xdmf_savefile()
-		if self.save_pngs:  self.init_png_savefile()	
+		if self.save_svgs:  self.init_svg_savefile()	
 		# perform a single time step when saving matrices
 		if self.save_mat: self.time_steps = 1 
 		
@@ -143,10 +143,10 @@ class KNPEMI_solver(object):
 		if self.save_mat: 
 			if self.problem.MMS_test:
 				print("Saving Pmat_MMS...")  
-				dump(self.P.mat(),'output/Pmat_MMS')				
+				dump(self.P.mat(),'src/EMIx/KNPEMI/output/CL/Pmat_MMS')				
 			else:
-				print("Saving output/Pmat")  
-				dump(self.P.mat(),'output/Pmat')				
+				print("Saving src/EMIx/KNPEMI/output/CL/Pmat")  
+				dump(self.P.mat(),'src/EMIx/KNPEMI/output/CL/Pmat')				
 
 	
 	def setup_solver(self):
@@ -273,7 +273,7 @@ class KNPEMI_solver(object):
 		setup_timer = 0		
 
 		self.t_list  = []		
-		self.t_list.append(float(t))
+		self.t_list.append(1000*float(t))
 		if self.time_adaptive: self.dt_list = []
 
 		# Time-stepping
@@ -283,7 +283,7 @@ class KNPEMI_solver(object):
 
 			# Update current time
 			t.assign(float(t + dt))
-			self.t_list.append(float(t))
+			self.t_list.append(1000*float(t))
 			if self.time_adaptive: self.dt_list.append(1000*float(dt))
 
 			# print some infos
@@ -336,10 +336,10 @@ class KNPEMI_solver(object):
 				
 				if self.problem.MMS_test:
 					print("Saving Amat_MMS...")  
-					dump(self.A.mat(),'output/Amat_MMS')				
+					dump(self.A.mat(),'src/EMIx/KNPEMI/output/CL/Amat_MMS')				
 				else:
-					print("Saving output/Amat...")  
-					dump(self.A.mat(),'output/Amat')				
+					print("Saving src/EMIx/KNPEMI/output/CL/Amat...")  
+					dump(self.A.mat(),'src/EMIx/KNPEMI/output/CL/Amat')				
 			
 				# use then in MATLAB: data = readNPY('Amat.npy'); A = create_sparse_mat_from_data(data);
 				# Write b
@@ -366,7 +366,7 @@ class KNPEMI_solver(object):
 
 			# write output
 			if self.save_xdmfs and (i % self.save_interval == 0) : self.save_xdmf()		
-			if self.save_pngs:	self.save_png()				
+			if self.save_svgs:	self.save_svg()				
 							
 			if i == self.time_steps - 1:
 							
@@ -385,9 +385,9 @@ class KNPEMI_solver(object):
 				# print solver and problem info
 				self.print_info()
 
-				if self.save_pngs:  
+				if self.save_svgs:  
 					self.print_figures()	
-					if MPI.comm_world.rank == 0: print("\nPNG output saved in", self.out_file_prefix)
+					if MPI.comm_world.rank == 0: print("\nSVG output saved in", self.out_file_prefix)
 				
 				if self.save_xdmfs: 
 					self.close_xdmf()	
@@ -434,7 +434,7 @@ class KNPEMI_solver(object):
 				print('Average iterations: ' + str(sum(self.iterations)/len(self.iterations)))				
 		
 
-	def init_png_savefile(self):
+	def init_svg_savefile(self):
 
 		p = self.problem
 
@@ -466,7 +466,7 @@ class KNPEMI_solver(object):
 		# potential
 		self.v_t = []
 		self.v_t.append(1000 *local_phi[self.point_to_plot]) # converting to mV 		
-		self.out_v_string = self.out_file_prefix + 'v.png'					
+		self.out_v_string = self.out_file_prefix + 'v.svg'					
 
 		# # concentrations TEST
 		# ui_p = self.problem.u_p.sub(0)		
@@ -474,7 +474,7 @@ class KNPEMI_solver(object):
 
 		# self.Na_t = []
 		# self.Na_t.append(local_Na[-1]) # converting to mV 		
-		# self.out_Na_string = self.out_file_prefix + 'Na_t.png'					
+		# self.out_Na_string = self.out_file_prefix + 'Na_t.svg'					
 		
 		# if HH gating variables are present (TODO move)
 		if hasattr(p, 'n'):
@@ -491,11 +491,11 @@ class KNPEMI_solver(object):
 			self.m_t.append(local_m[self.point_to_plot]) 
 			self.h_t.append(local_h[self.point_to_plot]) 
 			
-			self.out_gate_string =  self.out_file_prefix + 'gating.png'
+			self.out_gate_string =  self.out_file_prefix + 'gating.svg'
 			
 
 	# methods for output
-	def save_png(self):
+	def save_svg(self):
 		
 		p = self.problem
 
@@ -528,6 +528,8 @@ class KNPEMI_solver(object):
 		# save plot of membrane potential
 		plt.figure(0)
 		plt.plot(self.t_list, self.v_t)
+		plt.xlim(-1, 11)
+		plt.ylim(-100, 60) 
 		plt.xlabel('time (ms)')
 		plt.ylabel('membrane potential (mV)')
 		plt.savefig(self.out_v_string)
@@ -548,14 +550,14 @@ class KNPEMI_solver(object):
 			plt.plot(self.iterations)
 			plt.xlabel('time step')
 			plt.ylabel('number of iterations')
-			plt.savefig(self.out_file_prefix + 'iterations.png')
+			plt.savefig(self.out_file_prefix + 'iterations.svg')
 
 		if self.time_adaptive:
 				plt.figure(3)
 				plt.plot(self.dt_list)
 				plt.xlabel('time step')
 				plt.ylabel('dt (ms)')
-				plt.savefig(self.out_file_prefix + 'dt.png')
+				plt.savefig(self.out_file_prefix + 'dt.svg')
 				
 		# save runtime data
 		plt.figure(4)
@@ -564,7 +566,7 @@ class KNPEMI_solver(object):
 		plt.legend()
 		plt.xlabel('time step')
 		plt.ylabel('Time (s)')
-		plt.savefig(self.out_file_prefix + 'timings.png')
+		plt.savefig(self.out_file_prefix + 'timings.svg')
 
 	
 	def init_xdmf_savefile(self):
@@ -688,10 +690,10 @@ class KNPEMI_solver(object):
 	time_adaptive     = False
 
 	# handling pure Neumann boundary conditions
-	set_nullspace = False  # True = provide linear solver with the nullspace of the system matrix,
+	set_nullspace = True  # True = provide linear solver with the nullspace of the system matrix,
 						  # False = pin the solution with a point Dirichlet BC
 
 	# output parameters
-	out_file_prefix = 'output/'
-	save_interval = 1	
+	out_file_prefix = 'src/EMIx/KNPEMI/output/CL/'
+	save_interval = 20	
 	save_fluxes = False
