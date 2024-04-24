@@ -2,6 +2,25 @@
 
 Framework for parallel simulations of EMI and KNP-EMI models in complex geometries. 
 
+```
+@article{benedusi2024scalable,
+  title={Scalable approximation and solvers for ionic electrodiffusion in cellular geometries},
+  author={Benedusi, Pietro and Ellingsrud, Ada J and Herlyng, Halvor and Rognes, Marie E},
+  journal={arXiv preprint arXiv:2403.04491},
+  year={2024}
+}
+@article{benedusi2024modeling,
+  title={Modeling excitable cells with the EMI equations: spectral analysis and iterative solution strategy},
+  author={Benedusi, Pietro and Ferrari, Paola and Rognes, Marie E and Serra-Capizzano, Stefano},
+  journal={Journal of Scientific Computing},
+  volume={98},
+  number={3},
+  pages={58},
+  year={2024},
+  publisher={Springer}
+}
+```
+
 ## Dependencies
 
 * FEniCS (www.fenicsproject.org)
