@@ -4,12 +4,13 @@ Given an input file config.yml create an EMI (or KNPEMI) problem
 ```
 problem = EMI_problem("config.yml")
 ```
-The input .yml file contains time discretisation parameters, input files, tags information, and physical parameters. If not specified in config.yml, default input parameters are taken from (KNP)EMI_problem.py
+The input `.yml` file contains paths to geometry files, tags information, discretisation and physical parameters. Default parameters are provided in (KNP)EMI_problem.py, if not specified in config.yml
 
 Remark on tags: 
-- when pure Neumann boundary conditions are used (default) the boundary tag is not necessary. 
-- The default value of the extra tag is 1 and the default of membrane is the same as the intra tag. 
 - The intra tag must be provided (as an integer or a list). 
+- The default value of the extra tag is 1.
+- The default membrane tag is the same as the intra tag. 
+- When pure Neumann boundary conditions are used (default) the boundary tag is not necessary. 
 
 Read `data/README.md` for additional info about input generation from surface geometries.
 
