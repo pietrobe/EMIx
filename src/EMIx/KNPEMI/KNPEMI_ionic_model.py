@@ -4,7 +4,7 @@ import numpy as np
 import time
 
 # zero stimulus (default)
-def g_syn_none(g_syn_bar, a_syn, t):		
+def g_syn_none(t):		
 	return Constant(0.0)
 
 

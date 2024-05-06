@@ -55,22 +55,28 @@ class Mixed_dimensional_problem(ABC):
 
         if 'cell_tag_file' in config and 'facet_tag_file' in config:  
 
-            check_if_file_exists(config['cell_tag_file'])
-            check_if_file_exists(config['facet_tag_file'])
+            mesh_file  = input_dir + config['cell_tag_file']
+            facet_file = input_dir + config['facet_tag_file']
 
-            self.input_files['mesh_file']   = input_dir + config['cell_tag_file']
-            self.input_files['facets_file'] = input_dir + config['facet_tag_file']
+            check_if_file_exists(mesh_file)
+            check_if_file_exists(facet_file)
+
+            self.input_files['mesh_file']   = mesh_file
+            self.input_files['facets_file'] = facet_file
         else:
             print('Provide cell_tag_file and facet_tag_file fields in input .yml file')
             return
 
         if 'intra_restriction_dir' in config and 'extra_restriction_dir' in config:  
 
-            check_if_file_exists(config['intra_restriction_dir'])
-            check_if_file_exists(config['extra_restriction_dir'])
+            restriction_i  = input_dir + config['intra_restriction_dir']
+            restriction_e  = input_dir + config['extra_restriction_dir']
 
-            self.input_files['intra_restriction_dir'] = input_dir + config['intra_restriction_dir']
-            self.input_files['extra_restriction_dir'] = input_dir + config['extra_restriction_dir']
+            check_if_file_exists(restriction_i)
+            check_if_file_exists(restriction_e)
+
+            self.input_files['intra_restriction_dir'] = restriction_i
+            self.input_files['extra_restriction_dir'] = restriction_e
         else:
             print('Provide restrictions directories in input .yml file')
             return        
@@ -173,7 +179,7 @@ class Mixed_dimensional_problem(ABC):
 
             self.N_ions = len(self.ion_list) 
         else:
-            print('Using default ionic species (Na, K, Cl)')
+            if MPI.comm_world.rank == 0: print('Using default ionic species {Na, K, Cl}')
 
 
     def parse_tags(self, tags):
@@ -196,7 +202,6 @@ class Mixed_dimensional_problem(ABC):
                 print("#Cell tags =", len(tags['intra']))           
             else:           
                 print("Single cell tag")    
-
 
         if 'intra' in tags_set:
             self.intra_tags = tags['intra']
@@ -223,9 +228,10 @@ class Mixed_dimensional_problem(ABC):
             self.bound_tag = 1
 
 
-        # trasform int in tuple if needed
-        if isinstance(self.gamma_tags, int): self.gamma_tags = (self.gamma_tags,)
-    
+        # trasform in tuple if needed        
+        if isinstance(self.intra_tags, list): self.intra_tags = tuple(self.intra_tags)        
+        if isinstance(self.gamma_tags, list): self.gamma_tags = tuple(self.gamma_tags)
+        if isinstance(self.gamma_tags, int):  self.gamma_tags = (self.gamma_tags,)
 
     def init_ionic_model(self):    
 

@@ -1,0 +1,52 @@
+# Numerical parameters 
+time_steps : 100
+dt : 0.00005
+fem_order: 1
+mesh_conversion_factor : 1.0e-6
+
+# Problem constants (in consistent units)
+physical_constants:
+  T : 300   # temperature [K]
+  F : 96485 # Faraday constant [C/mol]
+  R : 8.314 # Gas constant [J/(K*mol)]
+
+C_M : 0.02 # membrane capacitance
+
+cell_tag_file         : "../../../data/square/square_regions32.xdmf"
+facet_tag_file        : "../../../data/square/square_facets32.xdmf"
+intra_restriction_dir : "../../../data/square/square_in_restriction32.rtc.xdmf"
+extra_restriction_dir : "../../../data/square/square_ex_restriction32.rtc.xdmf"
+
+ecs_tags : 1
+ics_tags : 2
+membrane_tags: 2
+
+phi_M_init : -0.06774
+
+ion_species:
+  Na : 
+    valence : 1
+    diffusivity : 1.33e-9
+    initial :     
+      ics : 12
+      ecs : 100
+    # source: 
+    #   ics : 0.4 # varying by ics/ecs
+    #   ecs : 0.8 #"t < 2 ? 2.1 : 0.0" # c expressions as in old fenics, with access to x (spatial) and t for time
+  K :
+    valence : 1
+    diffusivity : 1.96e-9
+    initial : 
+      ics : 125
+      ecs : 4
+  Cl :
+    valence : -1
+    diffusivity : 2.03e-9
+    initial : 
+      ics : 137
+      ecs : 104  
+
+
+  
+
+

@@ -6,7 +6,7 @@ problem = EMI_problem(config.yml)
 ```
 If not specified in config.yml, default input parameters are specified in (KNP)EMI_problem.py
 
-The boundary tag is not necessary, when pure Neumann boundary conditions are used (default). The default value of the extra tag is 1 and the default of membrane is the same as the intra tag. The intra tag must be provided. 
+The boundary tag is not necessary, when pure Neumann boundary conditions are used (default). The default value of the extra tag is 1 and the default of membrane is the same as the intra tag. The intra tag must be provided (as an integer or a list). 
 Read `data/README.md` for additional info about input generation from surface geometries.
 
 Create ionic model (possibly for membrane subset, using tags=... argument, default is applied on all membranes) and call problem.init_ionic_model():

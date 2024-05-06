@@ -77,14 +77,13 @@ mpirun -n N python3 -u EMI_example.py  # Parallel run, with N the number of MPI 
 
 The expected results are terminal output from 100 time steps of solving
 the EMI equations and simulation results in a separate directory
-(named output). 
-For the KNP-EMI case, run:
+(named output). For the KNP-EMI case, run:
 
 ```
 mpirun -n N python3 -u KNPEMI_example.py
 ```
 
-Further informations in *data/README.md* and *examples/data/README.md*.
+Input can be controlled via an input *.yml* file. Further informations in *data/README.md* and *examples/data/README.md*.
 
 ## Contributing guidelines
 

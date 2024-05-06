@@ -1,0 +1,18 @@
+# Numerical parameters 
+time_steps : 100
+dt : 0.00002
+mesh_conversion_factor : 1.0e-6
+
+input_dir             : "../data/myelin/"
+cell_tag_file         : "mesh0.xdmf"
+facet_tag_file        : "facets0.xdmf"
+intra_restriction_dir : "interior_restriction0.rtc.xdmf"
+extra_restriction_dir : "exterior_restriction0.rtc.xdmf"
+
+ecs_tags : 1
+ics_tags : 3
+membrane_tags: 2
+
+# phi_M_init : Expression('0.5*sin(10*(x[0]*x[0] + x[1]*x[1]))', degree=4)    # TODO    
+
+
