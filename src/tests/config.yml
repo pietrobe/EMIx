@@ -1,0 +1,16 @@
+# Numerical parameters 
+time_steps : 50
+dt : 0.00002
+mesh_conversion_factor : 1.0e-6
+
+cell_tag_file         : "../../data/square/square_regions32.xdmf"
+facet_tag_file        : "../../data/square/square_facets32.xdmf"
+intra_restriction_dir : "../../data/square/square_in_restriction32.rtc.xdmf"
+extra_restriction_dir : "../../data/square/square_ex_restriction32.rtc.xdmf"
+
+ecs_tags : 1
+ics_tags : 2
+membrane_tags: 2
+
+phi_M_init : -0.06774 
+
