@@ -1,5 +1,5 @@
-% addpath('../../../scripts/npy-matlab-master/npy-matlab/')
-% addpath('../../../scripts')
+% addpath('../../../../scripts/npy-matlab-master/npy-matlab/')
+% addpath('../../../../scripts')
 
 data = readNPY('Amat.npy');
 A = create_sparse_mat_from_data(data);

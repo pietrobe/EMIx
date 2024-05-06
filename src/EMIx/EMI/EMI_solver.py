@@ -13,14 +13,16 @@ from petsc4py     import PETSc
 class EMI_solver(object):
 
 	# constructor
-	def __init__(self, EMI_problem, time_steps, save_xdmf_files=False, save_png_files=False):
+	def __init__(self, EMI_problem, save_xdmf_files=False, save_png_files=False):
 		
-		self.problem    = EMI_problem
-		self.time_steps = time_steps		
+		self.problem    = EMI_problem		
 
 		# init forms		
 		self.problem.setup_bilinear_form()	
 		self.problem.setup_linear_form()	
+		if self.pc_block_Jacobi: 
+			self.problem.setup_preconditioner()	
+				
 
 		# Init output folder
 		# FIXME: Should be generic
@@ -32,7 +34,7 @@ class EMI_solver(object):
 		
 		if self.save_xdmf_files: self.init_xdmf()   		    		
 		if self.save_png_files:  self.init_png()   		    		
-		if self.save_mat:  self.time_steps = 1		
+		if self.save_mat:  self.problem.time_steps = 1		
 
 		# ininit ionic models 
 		self.problem.init_ionic_model()	
@@ -46,19 +48,27 @@ class EMI_solver(object):
 		if MPI.comm_world.rank == 0: print('Assembling linear system...') 	
 
 		# assemble
-		self.A = block_assemble(p.a)		
+		self.A = block_assemble(p.a)	
+		if self.pc_block_Jacobi: 
+			self.P = block_assemble(p.prec)						
+			# p.bcs_prec.apply(self.P)
 
 		# apply Dirichlet BC
 		if p.dirichlet_bcs:
-			p.bcs.apply(self.A)
+			p.bcs.apply(self.A)				
 
 		# pure Neumann BCs -> the system matrix is singular	(direct solver can handle it automatically)
 		elif not self.direct_solver:
 
 			# iterative solver
 			# provide linear solver with PETSc structures 		
-			self.A_ = as_backend_type(self.A).mat()											
-			self.ksp.setOperators(self.A_, self.A_)
+			self.A_ = as_backend_type(self.A).mat()		
+
+			if self.pc_block_Jacobi:
+				self.P_ = as_backend_type(self.P).mat()		
+				self.ksp.setOperators(self.A_, self.P_)
+			else:
+				self.ksp.setOperators(self.A_, self.A_)
 
 			# handle system singularity by providing nullspace 
 			if self.set_nullspace:
@@ -93,16 +103,24 @@ class EMI_solver(object):
 				# Provide PETSc with the nullspace and orthogonalize the right-hand side vector
 				# with respect to the nullspace
 				as_backend_type(self.A_).setNullSpace(self.nullspace)
-				as_backend_type(self.A_).setNearNullSpace(self.nullspace)
+				as_backend_type(self.A_).setNearNullSpace(self.nullspace)				
 
 			# Or pin the potential in one point
 			else:
 				p.bcs.apply(self.A)
+				
+				# if self.pc_block_Jacobi: 
+				# 	p.bcs.apply(self.P)
 	
 		if self.save_mat:
 				
 			print("Saving output/Amat...")  
 			dump(self.A.mat(),'output/Amat')	
+
+			if self.pc_block_Jacobi:
+				print("Saving output/Pmat...")  
+				dump(self.P.mat(),'output/Pmat')	
+
 			exit()												
 			
 	def assemble_rhs(self, init=True):
@@ -148,7 +166,11 @@ class EMI_solver(object):
 			PETScOptions.set("ksp_converged_reason")
 			PETScOptions.set("ksp_rtol",      self.ksp_rtol)					
 			PETScOptions.set("ksp_norm_type", self.norm_type)
-			PETScOptions.set("ksp_initial_guess_nonzero",   self.nonzero_init_guess)						
+			PETScOptions.set("ksp_initial_guess_nonzero",   self.nonzero_init_guess)		
+
+			if self.pc_type == "hypre":
+				PETScOptions.set("pc_hypre_boomeramg_max_iter",  self.max_amg_its)					
+
 						
 			if self.problem.mesh.topology().dim() == 3: 
 				PETScOptions.set("pc_hypre_boomeramg_strong_threshold", 0.5)			
@@ -156,7 +178,7 @@ class EMI_solver(object):
 			if self.verbose:
 				PETScOptions.set("ksp_view")
 				PETScOptions.set("ksp_monitor_true_residual")
-						
+			
 			self.ksp.setFromOptions() 
 
 		# vectors to collect number of iterations and runtimes			
@@ -186,7 +208,7 @@ class EMI_solver(object):
 		self.assembly_time.append(time.perf_counter() - tic)				
 						
 		# Time-stepping
-		for i in range(self.time_steps):			
+		for i in range(p.time_steps):			
 
 			# Update current time
 			t.assign(float(t + dt))
@@ -216,8 +238,8 @@ class EMI_solver(object):
 
 				block_solve(self.A, wh.block_vector(), self.F, linear_solver = 'mumps')
 				
-			else:												
-
+			else:
+				
 				# solve
 				self.ksp.solve(self.F_, self.wh_)
 
@@ -238,7 +260,7 @@ class EMI_solver(object):
 			if not self.direct_solver:
 				self.iterations.append(self.ksp.getIterationNumber())
 							
-			if i == self.time_steps - 1:
+			if i == p.time_steps - 1:
 			
 				total_assembly_time = sum(self.assembly_time)
 				total_solve_time    = sum(self.solve_time)
@@ -275,7 +297,7 @@ class EMI_solver(object):
 			print("FEM order =", p.fem_order)
 
 			if not self.direct_solver: print("System size =", self.A_.size[0])
-			print("Time steps =",  self.time_steps)			
+			print("Time steps =",  p.time_steps)			
 			print("dt =", float(p.dt))
 			
 			if p.dirichlet_bcs:
@@ -291,7 +313,8 @@ class EMI_solver(object):
 			if self.direct_solver:
 				print("Direct solver: mumps")
 			else:
-				print('Type:', self.ksp_type,'+', self.pc_type)					
+				print('Type:', self.ksp_type,'+', self.pc_type)		
+				if self.pc_block_Jacobi: print('Using BJ preconditioner')		
 				print('Tolerance:', self.ksp_rtol)							
 								
 				print('Average iterations: ' + str(sum(self.iterations)/len(self.iterations)))				
@@ -388,7 +411,7 @@ class EMI_solver(object):
 		
 		# aliases
 		dt = float(self.problem.dt)
-		time_steps = self.time_steps
+		time_steps = self.problem.time_steps
 
 		# save plot of membrane potential
 		plt.figure(0)
@@ -400,17 +423,19 @@ class EMI_solver(object):
 
 
 	# solvers parameters
-	direct_solver  = False
-	ksp_rtol   	   = 1e-6
-	ksp_type   	   = 'cg'
-	pc_type    	   = 'hypre'
-	norm_type  	   = 'preconditioned'	
+	direct_solver      = False
+	ksp_rtol   	       = 1e-6
+	ksp_type   	       = 'cg'
+	pc_type     	   = 'hypre'
+	max_amg_its		   = 1
+	pc_block_Jacobi    = False
+	norm_type    	   = 'preconditioned'	
 	nonzero_init_guess = True 
 	verbose            = False
 	
 	# output parameters	
-	save_mat        = False
+	save_mat = False
 
 	# handling pure Neumann boundary conditions
-	set_nullspace = False  # True = provide linear solver with the nullspace of the system matrix,
-            			   # False = pin the solution with a point Dirichlet BC
+	set_nullspace = True  # True = provide linear solver with the nullspace of the system matrix,
+            			  # False = pin the solution with a point Dirichlet BC

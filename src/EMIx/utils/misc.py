@@ -1,7 +1,15 @@
 from dolfin import *
 import scipy.sparse as sparse
 import numpy        as np
+from petsc4py     import PETSc
+import os
 
+
+def check_if_file_exists(file_path):
+
+    if not os.path.exists(file_path):        
+        print(f"The file '{file_path}' does not exist.")
+        exit()
 
 def norm_2(vec):
     return sqrt(dot(vec,vec))

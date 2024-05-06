@@ -34,7 +34,7 @@ class EMI_problem(Mixed_dimensional_problem):
 
 		elif model_type == "Passive":			
 			
-			model = Passive(self, tags);
+			model = Passive_model(self, tags);
 			self.ionic_models.append(model)	
 
 		else:
@@ -48,7 +48,7 @@ class EMI_problem(Mixed_dimensional_problem):
 			
 		self.V = FunctionSpace(self.mesh, "Lagrange", self.fem_order)
 
-		self.W = BlockFunctionSpace([self.V, self.V], restrict=[self.interior, self.exterior])
+		self.W = BlockFunctionSpace([self.V, self.V], restrict=[self.interior, self.exterior])				
 
 		# create function for solution
 		self.wh  = BlockFunction(self.W)
@@ -114,8 +114,8 @@ class EMI_problem(Mixed_dimensional_problem):
 			exit()
 
 		# aliases
-		dt   = self.dt 
-		C_M  = self.C_M
+		dt       = self.dt 
+		C_M      = self.C_M
 		sigma_i  = self.sigma_i
 		sigma_e  = self.sigma_e	
 					
@@ -136,14 +136,51 @@ class EMI_problem(Mixed_dimensional_problem):
 		(ui, ue) = block_split(uu)
 		(vi, ve) = block_split(vv)
 
-		a11 = inner(sigma_i*grad(ui), grad(vi))*dxi + (C_M/dt) * inner(ui('-'), vi('-'))*dS
+		a11 = inner(sigma_i*grad(ui), grad(vi))*dxi + (C_M/dt) * inner(ui('+'), vi('+'))*dS
 		a22 = inner(sigma_e*grad(ue), grad(ve))*dxe + (C_M/dt) * inner(ue('+'), ve('+'))*dS
-		a12 = - (C_M/dt) * inner(ue('+'), vi('-'))*dS
-		a21 = - (C_M/dt) * inner(ui('-'), ve('+'))*dS
+		a12 = - (C_M/dt) * inner(ue('+'), vi('+'))*dS
+		a21 = - (C_M/dt) * inner(ui('+'), ve('+'))*dS
 
 		
 		self.a = [[a11, a12],
-				 [ a21, a22]]
+				 [ a21, a22]]		
+
+
+	def setup_preconditioner(self):
+		
+		# aliases
+		dt       = self.dt 
+		C_M      = self.C_M
+		sigma_i  = self.sigma_i
+		sigma_e  = self.sigma_e	
+					
+		if MPI.comm_world.rank == 0: print('Setting up preconditioner') 
+
+		# define measures
+		dx = Measure("dx")(subdomain_data=self.subdomains)		
+		dS = Measure("dS")(subdomain_data=self.boundaries)
+
+		dxi = dx(self.intra_tags)
+		dxe = dx(self.extra_tag)					
+		dS  = dS(self.gamma_tags) 
+						
+		# trial/test functions
+		uu = BlockTrialFunction(self.W)
+		vv = BlockTestFunction(self.W)
+
+		(ui, ue) = block_split(uu)
+		(vi, ve) = block_split(vv)
+
+		p11 = inner(sigma_i*grad(ui), grad(vi))*dxi + inner(ui, vi)*dxi
+		p22 = inner(sigma_e*grad(ue), grad(ve))*dxe + inner(ue, ve)*dxe
+		
+		self.prec = [[p11, 0],
+				    [ 0, p22]]		
+
+		# # setup BC for preconditioner		
+		# bc_i = DirichletBC(self.W.sub(0), self.phi_M_init, self.boundaries, self.gamma_tags[0])	
+		# bc_e = DirichletBC(self.W.sub(1), self.phi_e_init, self.boundaries, self.bound_tag)																					
+		# self.bcs_prec = BlockDirichletBC([bc_i, None]) 		
 
 
 	def setup_linear_form(self): # remove t from input
@@ -203,7 +240,7 @@ class EMI_problem(Mixed_dimensional_problem):
 	### class variables ###
 		
 	# physical parameters
-	C_M     = 0.01
+	C_M     = 1.0
 	sigma_i = 1.0
 	sigma_e = 1.0
 	
@@ -218,10 +255,13 @@ class EMI_problem(Mixed_dimensional_problem):
 	phi_e_init = Constant(0.0)
 
 	# initial membrane potential 
-	phi_M_init = Constant(-0.06774) 
+	# phi_M_init = Constant(-0.06774)							
+	# phi_M_init = Expression('x[0]', degree=1)					
+	phi_M_init = Expression('0.5*sin(10*(x[0]*x[0] + x[1]*x[1]))', degree=4)					
 
 	# order 
 	fem_order = 1
 
 	# BC
 	dirichlet_bcs = False
+

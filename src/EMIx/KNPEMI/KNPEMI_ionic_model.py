@@ -3,6 +3,12 @@ from dolfin import *
 import numpy as np
 import time
 
+# ionic model parameters
+g_Na_leak = Constant(2.0*0.5)    # Na leak conductivity (S/m**2)
+g_K_leak  = Constant(8.0*0.5)    # K leak conductivity (S/m**2)
+g_Cl_leak = Constant(0.0)        # Cl leak conductivity (S/m**2)
+
+
 # zero stimulus (default)
 def g_syn_none(g_syn_bar, a_syn, t):		
 	return Constant(0.0)
@@ -36,6 +42,15 @@ class Ionic_model(ABC):
 
 		# trasform int in tuple if needed
 		if isinstance(self.tags, int): self.tags = (self.tags,)
+
+		# init ionic constants
+		for ion in self.problem.ion_list:
+			if ion['name'] == 'Na':
+				ion['g_leak'] = g_Na_leak
+			elif ion['name'] == 'K':
+				ion['g_leak'] = g_K_leak
+			elif ion['name'] == 'Cl':
+				ion['g_leak'] = g_Cl_leak		
 	
 
 	@abstractmethod
@@ -80,13 +95,12 @@ class Passive_model(Ionic_model):
 
 # I_ch = g*(phi_M - E) + stimuls
 class Passive_Nerst_model(Ionic_model):
-
+	
 	def __init__(self, KNPEMI_problem, tags=None, stim_fun=g_syn_none):
 
 		super().__init__(KNPEMI_problem, tags)
 
 		self.g_Na_stim = stim_fun
-
 	
 	def __str__(self):		
 		return f'Passive'
@@ -96,8 +110,8 @@ class Passive_Nerst_model(Ionic_model):
 		pass
 
 	
-	def _eval(self, ion_idx):	
-		
+	def _eval(self, ion_idx):
+
 		# aliases	
 		p     = self.problem			
 		ion   = p.ion_list[ion_idx]
@@ -108,7 +122,7 @@ class Passive_Nerst_model(Ionic_model):
 
 		# stimulus
 		if ion['name'] == 'Na':
-			ion['g_k'] += self.g_Na_stim(p.g_syn_bar, p.a_syn, float(p.t)) 
+			ion['g_k'] += self.g_Na_stim(float(p.t)) 
 
 		I_ch = ion['g_k']*(phi_M - ion['E'])
 		
@@ -117,6 +131,12 @@ class Passive_Nerst_model(Ionic_model):
 
 # Ionic K pump
 class Passive_K_pump_model(Ionic_model):
+
+	# potassium buffering parameters
+	rho_pump = 1.115e-6			     # maximum pump rate (mol/m**2 s)
+	P_Nai = 10                       # [Na+]i threshold for Na+/K+ pump (mol/m^3)
+	P_Ke  = 1.5                      # [K+]e  threshold for Na+/K+ pump (mol/m^3)
+	k_dec = 2.9e-8				     # Decay factor for [K+]e (m/s)
 
 	# -k_dec * ([K]e − [K]e_0) both for K and Na
 	use_decay_currents = False			
@@ -127,6 +147,15 @@ class Passive_K_pump_model(Ionic_model):
 
 		self.g_Na_stim = stim_fun
 
+		# init pump constants
+		for ion in self.problem.ion_list:
+			if ion['name'] == 'Na':
+				ion['rho_p'] =  3 * self.rho_pump
+			elif ion['name'] == 'K':
+				ion['rho_p'] = -2 * self.rho_pump
+			elif ion['name'] == 'Cl':
+				ion['rho_p'] = 0.0		
+		
 	
 	def __str__(self):
 		if self.use_decay_currents:
@@ -140,12 +169,10 @@ class Passive_K_pump_model(Ionic_model):
 		# aliases		
 		p = self.problem
 
-		ui_p  = self.problem.u_p[0]
-		ue_p  = self.problem.u_p[1]
-		P_Nai = self.problem.P_Nai
-		P_Ke  = self.problem.P_Ke
-
-		self.pump_coeff = ui_p.sub(0)**1.5/(ui_p.sub(0)**1.5 + P_Nai**1.5) * (ue_p.sub(1)/(ue_p.sub(1) + P_Ke))			
+		ui_p  = p.u_p[0]
+		ue_p  = p.u_p[1]
+		
+		self.pump_coeff = ui_p.sub(0)**1.5/(ui_p.sub(0)**1.5 + self.P_Nai**1.5) * (ue_p.sub(1)/(ue_p.sub(1) + self.P_Ke))			
 		
 
 	def _eval(self, ion_idx):
@@ -165,7 +192,7 @@ class Passive_K_pump_model(Ionic_model):
 
 		# stimulus
 		if ion['name'] == 'Na':
-			ion['g_k'] += self.g_Na_stim(p.g_syn_bar, p.a_syn, float(p.t)) 
+			ion['g_k'] += self.g_Na_stim(float(p.t)) 
 			
 		# f kir coeff	
 		if ion['name'] == 'K':
@@ -181,7 +208,7 @@ class Passive_K_pump_model(Ionic_model):
 
 		if self.use_decay_currents:
 			if ion['name'] == 'K' or ion['name'] == 'Na':
-				I_ch -= F*z*p.k_dec*(ue_p.sub(1) - K_e_init)  
+				I_ch -= F*z*self.k_dec*(ue_p.sub(1) - K_e_init)  
 		
 		return I_ch
 
@@ -192,6 +219,16 @@ class HH_model(Ionic_model):
 	# numerics
 	use_Rush_Lar   = True
 	time_steps_ODE = 25 	
+
+	# initial gating variables values
+	n_init = Constant(0.27622914792) # gating variable n
+	m_init = Constant(0.03791834627) # gating variable m
+	h_init = Constant(0.68848921811) # gating variable h
+
+	V_rest   = -0.065  # resting membrane potential
+	g_Na_bar = 1200    # Na max conductivity (S/m**2)
+	g_K_bar  = 360  
+
 
 	def __init__(self, KNPEMI_problem, tags=None, stim_fun=g_syn_none):
 
@@ -211,9 +248,9 @@ class HH_model(Ionic_model):
 		# update gating variables
 		if float(p.t) == 0:
 					
-				p.n = interpolate(p.n_init, p.V.sub(p.N_ions).collapse())			
-				p.m = interpolate(p.m_init, p.V.sub(p.N_ions).collapse())
-				p.h = interpolate(p.h_init, p.V.sub(p.N_ions).collapse())	
+				p.n = interpolate(self.n_init, p.V.sub(p.N_ions).collapse())			
+				p.m = interpolate(self.m_init, p.V.sub(p.N_ions).collapse())
+				p.h = interpolate(self.h_init, p.V.sub(p.N_ions).collapse())	
 
 		else:
 			self.update_gating_variables()			
@@ -231,11 +268,11 @@ class HH_model(Ionic_model):
 
 		# stimulus and gating
 		if ion['name'] == 'Na':
-			ion['g_k'] += self.g_Na_stim(p.g_syn_bar, p.a_syn, float(p.t)) 
-			ion['g_k'] += p.g_Na_bar*p.m**3*p.h
+			ion['g_k'] += self.g_Na_stim(float(p.t)) 
+			ion['g_k'] += self.g_Na_bar*p.m**3*p.h
 
 		elif ion['name'] == 'K':
-			ion['g_k'] += p.g_K_bar*p.n**4				
+			ion['g_k'] += self.g_K_bar*p.n**4				
 		
 		I_ch = ion['g_k']*(phi_M - ion['E'])
 		
@@ -253,7 +290,7 @@ class HH_model(Ionic_model):
 		phi_M_prev = self.problem.phi_M_prev
 		dt_ode = float(self.problem.dt)/self.time_steps_ODE	
 		
-		V_M = 1000*(phi_M_prev.vector()[:] - self.problem.V_rest) # convert phi_M to mV				
+		V_M = 1000*(phi_M_prev.vector()[:] - self.V_rest) # convert phi_M to mV				
 
 		# # correction to prevent overflow for indeces not in gamma (TODO PARALLEL?)
 		# V_M[abs(V_M)>200] = 0

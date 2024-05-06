@@ -1,8 +1,10 @@
 from dolfin import *
 from abc    import ABC, abstractmethod
+from EMIx.utils.misc import check_if_file_exists
 from multiphenics   import *
 import collections.abc
 import time
+import yaml
 
 
 def flatten_list(input_list):
@@ -13,22 +15,14 @@ class Mixed_dimensional_problem(ABC):
 
     t = Constant(0.0) 
         
-
-    def __init__(self, input_files, tags, dt):      
-
-        tic = time.perf_counter()       
-
-        if MPI.comm_world.rank == 0: print("Reading input data:", input_files)
-
-        # assign input arguments
-        self.input_files = input_files              
-
-        # parse tags
-        self.parse_tags(tags)
+    def __init__(self, config_file):  
         
-        # init time step
-        self.dt = Constant(dt)
+        if MPI.comm_world.rank == 0: print("Reading input data from:", config_file)
+        tic = time.perf_counter() 
 
+        # read parametrs from input config file 
+        self.read_config_file(config_file)             
+                
         # in case some problem dependent init is needed
         self.init()
                         
@@ -42,7 +36,147 @@ class Mixed_dimensional_problem(ABC):
 
         if MPI.comm_world.rank == 0: print(f"Problem setup in {time.perf_counter() - tic:0.4f} seconds\n")   
 
+
+    def read_config_file(self, config_file):
+        
+        # read input yml file
+        with open(config_file, 'r') as file:
+            try:
+                config = yaml.safe_load(file)
+            except yaml.YAMLError as exc:
+                print(exc)        
+            
+        # set input files and tags
+        self.input_files = dict()
+
+        if 'cell_tag_file' in config and 'facet_tag_file' in config:  
+
+            check_if_file_exists(config['cell_tag_file'])
+            check_if_file_exists(config['facet_tag_file'])
+
+            self.input_files['mesh_file']   = config['cell_tag_file']
+            self.input_files['facets_file'] = config['facet_tag_file']
+        else:
+            print('Provide cell_tag_file and facet_tag_file fields in input .yml file')
+            return
+
+        if 'intra_restriction_dir' in config and 'extra_restriction_dir' in config:  
+
+            check_if_file_exists(config['intra_restriction_dir'])
+            check_if_file_exists(config['extra_restriction_dir'])
+
+            self.input_files['intra_restriction_dir'] = config['intra_restriction_dir']
+            self.input_files['extra_restriction_dir'] = config['extra_restriction_dir']
+        else:
+            print('Provide restrictions directories in input .yml file')
+            return
+
+        # TODO check if files exists
+
+        # init time step
+        if 'dt' in config:
+            self.dt = Constant(config['dt'])        
+        else:
+            print('Provide dt in input file')
+            return
+
+        if 'time_steps' in config: 
+            self.time_steps = config['time_steps']            
+        elif 'T' in config:            
+            self.time_steps = int(config['T']/config['dt'])        
+        else:
+            print('ERROR: provide final time T or time_steps in config_file!')
+            exit()
+
+        # set tags
+        tags = dict()
+        tags['intra'] = config['ics_tags']
+
+        if 'ecs_tags' in config:
+            tags['extra'] = config['ecs_tags']
+
+        if 'boundary_tags' in config:
+            tags['boundary'] = config['boundary_tags']
+
+        if 'membrane_tags' in config:
+            tags['membrane'] = config['membrane_tags']
+
+        # parse tags
+        self.parse_tags(tags)        
+
+        # set physical parameters
+        if 'physical_constants' in config:
+            physical_const = config['physical_constants']
+            
+            if 'T' in physical_const: self.T = physical_const['T']
+            if 'R' in physical_const: self.R = physical_const['R']
+            if 'F' in physical_const: self.F = physical_const['F']                        
+            self.psi = self.R*self.T/self.F    
+        
+        if 'C_M' in config: self.C_M     = config['C_M']
+            
+        # scaling mesh factor
+        if 'mesh_conversion_factor' in config: 
+            self.m_conversion_factor = config['mesh_conversion_factor']
+        else:      
+            self.m_conversion_factor = 1
+
+        # finite element polynomial order 
+        if 'fem_order' in config: self.fem_order = config['fem_order']
+
+        # boundary conditions 
+        if 'dirichlet_bcs' in config: self.dirichlet_bcs = config['dirichlet_bcs']      
+
+        # initial membrane potential
+        if 'phi_M_init' in config: self.phi_M_init = Constant(config['phi_M_init'])
+
+        # set diffusivities (for EMI)
+        if 'sigma_i' in config: self.sigma_i = config['sigma_i']      
+        if 'sigma_e' in config: self.sigma_e = config['sigma_e']      
     
+        # set parameters of ions (for KNP-EMI)
+        if'ion_species' in config:
+
+            self.ion_list = []
+
+            for ion in config['ion_species']:
+                
+                ion_dict = {'name':ion}   
+
+                ion_params = config['ion_species'][ion]                   
+
+                # safety checks
+                if 'valence' not in ion_params: 
+                    print('ERROR: valence of ', ion, 'should be provided!')
+                    return
+                if 'diffusivity' not in ion_params: 
+                    print('ERROR: diffusivity of ', ion, 'should be provided!')
+                    return
+                if 'initial' not in ion_params: 
+                    print('ERROR: initial of ', ion, 'should be provided!')
+                    return
+
+                # fill ion information
+                ion_dict['z']       = ion_params['valence']                                
+                ion_dict['Di']      = Constant(ion_params['diffusivity'])
+                ion_dict['De']      = Constant(ion_params['diffusivity'])                
+                ion_dict['ki_init'] = Constant(ion_params['initial']['ics'])
+                ion_dict['ke_init'] = Constant(ion_params['initial']['ecs'])                
+                
+                if 'source' in ion_params:
+                    ion_dict['f_i'] = Constant(ion_params['source']['ics'])              
+                    ion_dict['f_e'] = Constant(ion_params['source']['ecs'])                               
+                else:
+                    ion_dict['f_i'] = Constant(0.0)              
+                    ion_dict['f_e'] = Constant(0.0)                               
+            
+                self.ion_list.append(ion_dict) 
+
+            self.N_ions = len(self.ion_list) 
+        else:
+            print('Using default ionic species (Na, K, Cl)')
+
+
     def parse_tags(self, tags):
 
         allowed_tags = {'intra','extra','membrane','boundary'}
@@ -120,8 +254,8 @@ class Mixed_dimensional_problem(ABC):
     def setup_domain(self):
 
         # rename files for readablity
-        mesh_file       = self.input_files['mesh_file']     
-        boundaries_file = self.input_files['facets_file']
+        mesh_file             = self.input_files['mesh_file']     
+        boundaries_file       = self.input_files['facets_file']
         intra_restriction_dir = self.input_files['intra_restriction_dir']
         extra_restriction_dir = self.input_files['extra_restriction_dir']           
 
@@ -132,7 +266,7 @@ class Mixed_dimensional_problem(ABC):
             subdomains_file = self.input_files['subdomais_file']
 
             # load xml files
-            self.mesh = Mesh(mesh_file)
+            self.mesh       = Mesh(mesh_file)
             self.subdomains = MeshFunction("size_t", self.mesh, subdomains_file)
             self.boundaries = MeshFunction("size_t", self.mesh, boundaries_file)
 
@@ -153,7 +287,7 @@ class Mixed_dimensional_problem(ABC):
             with XDMFFile(mesh_file) as f:
                 f.read(self.mesh)               
                 self.subdomains = MeshFunction("size_t", self.mesh, self.mesh.topology().dim(), 0) 
-                f.read(self.subdomains)
+                f.read(self.subdomains)            
             
             with XDMFFile(boundaries_file) as f:
                 self.boundaries = MeshFunction("size_t", self.mesh, self.mesh.topology().dim() - 1, 0)

@@ -12,11 +12,10 @@ from petsc4py     import PETSc
 class KNPEMI_solver(object):
 
 	# constructor
-	def __init__(self, KNPEMI_problem, time_steps, save_xdmf_files=False, save_png_files=False, save_mat=False):
+	def __init__(self, KNPEMI_problem, save_xdmf_files=False, save_png_files=False, save_mat=False):
 
 		# init variables 
-		self.problem    = KNPEMI_problem
-		self.time_steps = time_steps	
+		self.problem    = KNPEMI_problem		
 		self.save_xdmfs = save_xdmf_files	
 		self.save_pngs  = save_png_files	
 		self.save_mat   = save_mat	
@@ -27,8 +26,9 @@ class KNPEMI_solver(object):
 		# output files		
 		if self.save_xdmfs: self.init_xdmf_savefile()
 		if self.save_pngs:  self.init_png_savefile()	
+		
 		# perform a single time step when saving matrices
-		if self.save_mat: self.time_steps = 1 
+		if self.save_mat: self.problem.time_steps = 1 
 		
 		if self.problem.MMS_test: self.problem.print_errors()		
 
@@ -277,7 +277,7 @@ class KNPEMI_solver(object):
 		if self.time_adaptive: self.dt_list = []
 
 		# Time-stepping
-		for i in range(self.time_steps):			
+		for i in range(p.time_steps):			
 
 			dt = p.dt
 
@@ -368,7 +368,7 @@ class KNPEMI_solver(object):
 			if self.save_xdmfs and (i % self.save_interval == 0) : self.save_xdmf()		
 			if self.save_pngs:	self.save_png()				
 							
-			if i == self.time_steps - 1:
+			if i == p.time_steps - 1:
 							
 				total_assembly_time = sum(self.assembly_time)
 				total_solve_time    = sum(self.solve_time)
@@ -409,7 +409,7 @@ class KNPEMI_solver(object):
 			print("FEM order =", p.fem_order)
 
 			if not self.direct_solver: print("System size =", self.A_.size[0])
-			print("Time steps =",  self.time_steps)			
+			print("Time steps =",  p.time_steps)			
 			print("dt =", float(p.dt))
 			
 			if p.dirichlet_bcs:
@@ -523,7 +523,7 @@ class KNPEMI_solver(object):
 
 		# aliases
 		dt = float(self.problem.dt)
-		time_steps = self.time_steps
+		time_steps = self.problem.time_steps
 
 		# save plot of membrane potential
 		plt.figure(0)
