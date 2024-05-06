@@ -2,7 +2,6 @@ from EMIx    import *
 from dolfin  import *
 from pathlib import Path
 
-
 # values from direct solve at t = T
 FINAL_PHI_M = 36.66709614
 
