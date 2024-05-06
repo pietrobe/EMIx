@@ -11,5 +11,6 @@ dependencies:
   - scipy
   - pytest
   - conda-ecosystem-user-package-isolation
+  - pyyaml
   - pip:
       - "git+https://github.com/multiphenics/multiphenics.git"

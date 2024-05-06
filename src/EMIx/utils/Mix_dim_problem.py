@@ -6,7 +6,6 @@ import collections.abc
 import time
 import yaml
 
-
 def flatten_list(input_list):
     return [item for sublist in input_list for item in (sublist if isinstance(sublist, tuple) else [sublist])]
 
