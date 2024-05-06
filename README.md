@@ -83,7 +83,7 @@ the EMI equations and simulation results in a separate directory
 mpirun -n N python3 -u KNPEMI_example.py
 ```
 
-Input can be controlled via an input *.yml* file. Further informations in *data/README.md* and *examples/data/README.md*.
+Input can be controlled via a *.yml* file. Further informations in *data/README.md* and *examples/data/README.md*.
 
 ## Contributing guidelines
 
