@@ -3,12 +3,6 @@ from dolfin import *
 import numpy as np
 import time
 
-# ionic model parameters
-g_Na_leak = Constant(2.0*0.5)    # Na leak conductivity (S/m**2)
-g_K_leak  = Constant(8.0*0.5)    # K leak conductivity (S/m**2)
-g_Cl_leak = Constant(0.0)        # Cl leak conductivity (S/m**2)
-
-
 # zero stimulus (default)
 def g_syn_none(g_syn_bar, a_syn, t):		
 	return Constant(0.0)
@@ -43,14 +37,19 @@ class Ionic_model(ABC):
 		# trasform int in tuple if needed
 		if isinstance(self.tags, int): self.tags = (self.tags,)
 
+		# ionic model parameters
+		g_Na_leak = 1.0    # Na leak conductivity (S/m**2)
+		g_K_leak  = 4.0    # K leak conductivity (S/m**2)
+		g_Cl_leak = 0.0    # Cl leak conductivity (S/m**2)
+
 		# init ionic constants
 		for ion in self.problem.ion_list:
 			if ion['name'] == 'Na':
-				ion['g_leak'] = g_Na_leak
+				ion['g_leak'] = Constant(g_Na_leak)
 			elif ion['name'] == 'K':
-				ion['g_leak'] = g_K_leak
+				ion['g_leak'] = Constant(g_K_leak)
 			elif ion['name'] == 'Cl':
-				ion['g_leak'] = g_Cl_leak		
+				ion['g_leak'] = Constant(g_Cl_leak)		
 	
 
 	@abstractmethod
@@ -248,9 +247,9 @@ class HH_model(Ionic_model):
 		# update gating variables
 		if float(p.t) == 0:
 					
-				p.n = interpolate(self.n_init, p.V.sub(p.N_ions).collapse())			
-				p.m = interpolate(self.m_init, p.V.sub(p.N_ions).collapse())
-				p.h = interpolate(self.h_init, p.V.sub(p.N_ions).collapse())	
+			p.n = interpolate(self.n_init, p.V.sub(p.N_ions).collapse())			
+			p.m = interpolate(self.m_init, p.V.sub(p.N_ions).collapse())
+			p.h = interpolate(self.h_init, p.V.sub(p.N_ions).collapse())	
 
 		else:
 			self.update_gating_variables()			
@@ -270,7 +269,6 @@ class HH_model(Ionic_model):
 		if ion['name'] == 'Na':
 			ion['g_k'] += self.g_Na_stim(float(p.t)) 
 			ion['g_k'] += self.g_Na_bar*p.m**3*p.h
-
 		elif ion['name'] == 'K':
 			ion['g_k'] += self.g_K_bar*p.n**4				
 		

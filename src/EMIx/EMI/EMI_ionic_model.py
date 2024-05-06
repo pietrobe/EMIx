@@ -57,16 +57,12 @@ class HH_model(Ionic_model):
 	g_K_bar   = 360                  # K max conductivity (S/m**2)    
 	g_Na_leak = Constant(2.0*0.5)    # Na leak conductivity (S/m**2)
 	g_K_leak  = Constant(8.0*0.5)    # K leak conductivity (S/m**2)
-	g_Cl_leak = Constant(0.0)        # Cl leak conductivity (S/m**2)	
-	g_syn_bar = 40                   # synaptic conductivity (S/m**2)	
+	g_Cl_leak = Constant(0.0)        # Cl leak conductivity (S/m**2)		
 	V_rest    = -0.065               # resting membrane potential
 	E_Na      = 54.8e-3              # reversal potential Na (V)
 	E_K       = -88.98e-3            # reversal potential K (V)
 	E_Cl      = 0  		             # reversal potential 0 (V)
-
-	# stimulus constant
-	a_syn   = 0.002   
-
+	
 	# numerics
 	use_Rush_Lar   = True
 	time_steps_ODE = 26
@@ -113,7 +109,7 @@ class HH_model(Ionic_model):
 		g_Cl = self.g_Cl_leak
 
 		# stimulus
-		g_Na += self.g_Na_stim(self.g_syn_bar, self.a_syn, float(p.t)) 
+		g_Na += self.g_Na_stim(float(p.t)) 
 
 		# ionic currents
 		I_ch_Na = g_Na * (p.phi_M - self.E_Na)

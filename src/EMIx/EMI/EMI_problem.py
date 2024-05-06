@@ -240,7 +240,7 @@ class EMI_problem(Mixed_dimensional_problem):
 	### class variables ###
 		
 	# physical parameters
-	C_M     = 1.0
+	C_M     = 0.01
 	sigma_i = 1.0
 	sigma_e = 1.0
 	
@@ -255,9 +255,9 @@ class EMI_problem(Mixed_dimensional_problem):
 	phi_e_init = Constant(0.0)
 
 	# initial membrane potential 
-	# phi_M_init = Constant(-0.06774)							
+	phi_M_init = Constant(-0.06774)							
 	# phi_M_init = Expression('x[0]', degree=1)					
-	phi_M_init = Expression('0.5*sin(10*(x[0]*x[0] + x[1]*x[1]))', degree=4)					
+	# phi_M_init = Expression('0.5*sin(10*(x[0]*x[0] + x[1]*x[1]))', degree=4)					
 
 	# order 
 	fem_order = 1

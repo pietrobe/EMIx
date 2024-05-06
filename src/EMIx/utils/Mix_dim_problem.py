@@ -49,13 +49,18 @@ class Mixed_dimensional_problem(ABC):
         # set input files and tags
         self.input_files = dict()
 
+        if 'input_dir' in config:
+            input_dir = config['input_dir']
+        else:         
+            input_dir = ''
+
         if 'cell_tag_file' in config and 'facet_tag_file' in config:  
 
             check_if_file_exists(config['cell_tag_file'])
             check_if_file_exists(config['facet_tag_file'])
 
-            self.input_files['mesh_file']   = config['cell_tag_file']
-            self.input_files['facets_file'] = config['facet_tag_file']
+            self.input_files['mesh_file']   = input_dir + config['cell_tag_file']
+            self.input_files['facets_file'] = input_dir + config['facet_tag_file']
         else:
             print('Provide cell_tag_file and facet_tag_file fields in input .yml file')
             return
@@ -65,13 +70,11 @@ class Mixed_dimensional_problem(ABC):
             check_if_file_exists(config['intra_restriction_dir'])
             check_if_file_exists(config['extra_restriction_dir'])
 
-            self.input_files['intra_restriction_dir'] = config['intra_restriction_dir']
-            self.input_files['extra_restriction_dir'] = config['extra_restriction_dir']
+            self.input_files['intra_restriction_dir'] = input_dir + config['intra_restriction_dir']
+            self.input_files['extra_restriction_dir'] = input_dir + config['extra_restriction_dir']
         else:
             print('Provide restrictions directories in input .yml file')
-            return
-
-        # TODO check if files exists
+            return        
 
         # init time step
         if 'dt' in config:
@@ -85,7 +88,7 @@ class Mixed_dimensional_problem(ABC):
         elif 'T' in config:            
             self.time_steps = int(config['T']/config['dt'])        
         else:
-            print('ERROR: provide final time T or time_steps in config_file!')
+            print('ERROR: provide final time T or time_steps in input .yml file!')
             exit()
 
         # set tags
@@ -113,18 +116,15 @@ class Mixed_dimensional_problem(ABC):
             if 'F' in physical_const: self.F = physical_const['F']                        
             self.psi = self.R*self.T/self.F    
         
-        if 'C_M' in config: self.C_M     = config['C_M']
+        if 'C_M' in config: self.C_M = config['C_M']
             
-        # scaling mesh factor
-        if 'mesh_conversion_factor' in config: 
-            self.m_conversion_factor = config['mesh_conversion_factor']
-        else:      
-            self.m_conversion_factor = 1
-
-        # finite element polynomial order 
+        # scaling mesh factor (dafult 1)
+        if 'mesh_conversion_factor' in config: self.m_conversion_factor = config['mesh_conversion_factor']
+        
+        # finite element polynomial order (dafult 1) 
         if 'fem_order' in config: self.fem_order = config['fem_order']
 
-        # boundary conditions 
+        # boundary conditions (dafult False)
         if 'dirichlet_bcs' in config: self.dirichlet_bcs = config['dirichlet_bcs']      
 
         # initial membrane potential

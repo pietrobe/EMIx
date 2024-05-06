@@ -621,26 +621,12 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 	F   = 96485                      # Faraday's constant (C/mol)
 	R   = 8.314                      # Gas constant (J/(K*mol))
 	psi = R*T/F                      # recurring variable (psi = 0.0259, 1/psi = 38.7)
-	# g_Na_bar  = 1200                 # Na max conductivity (S/m**2)
-	# g_K_bar   = 360                  # K max conductivity (S/m**2)    
-	# g_Na_leak = Constant(2.0*0.5)    # Na leak conductivity (S/m**2)
-	# g_K_leak  = Constant(8.0*0.5)    # K leak conductivity (S/m**2)
-	# g_Cl_leak = Constant(0.0)        # Cl leak conductivity (S/m**2)
-	# a_syn     = 0.002                # synaptic time constant (s)
-	# g_syn_bar = 40                   # synaptic conductivity (S/m**2)
+	
+	# diffusivities
 	D_Na = Constant(1.33e-9)         # diffusion coefficients Na (m/s)
 	D_K  = Constant(1.96e-9)         # diffusion coefficients K (m/s)
 	D_Cl = Constant(2.03e-9)         # diffusion coefficients Cl (m/s)
-	# V_rest  = -0.065                 # resting membrane potential
-	# # E_Na    = 54.8e-3                # reversal potential Na (V)
-	# # E_K     = -88.98e-3              # reversal potential K (V)
 	
-	# # potassium buffering parameters
-	# rho_pump = 1.115e-6			     # maximum pump rate (mol/m**2 s)
-	# P_Nai = 10                       # [Na+]i threshold for Na+/K+ pump (mol/m^3)
-	# P_Ke  = 1.5                      # [K+]e  threshold for Na+/K+ pump (mol/m^3)
-	# k_dec = 2.9e-8				     # Decay factor for [K+]e (m/s)
-
 	# initial conditions for the electric potentials and ion concentrations
 	phi_e_init = Constant(0)         # external potential (V)
 	phi_i_init = Constant(-0.06774)  # internal potential (V) just for visualization
@@ -652,11 +638,6 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 	Cl_i_init  = Constant(137)       # intracellular Cl concentration (mol/m^3)
 	Cl_e_init  = Constant(104)       # extracellular Cl concentration (mol/m^3)
 
-	# # initial gating variables values
-	# n_init = Constant(0.27622914792) # gating variable n
-	# m_init = Constant(0.03791834627) # gating variable m
-	# h_init = Constant(0.68848921811) # gating variable h
-
 	# source terms
 	Na_e_f = Constant(0.0)
 	Na_i_f = Constant(0.0)
@@ -664,12 +645,7 @@ class KNPEMI_problem(Mixed_dimensional_problem):
 	K_i_f  = Constant(0.0)
 	Cl_e_f = Constant(0.0)
 	Cl_i_f = Constant(0.0)
-
-	# # create ions (Na conductivity is set below for each model)
-	# Na = {'g_leak':g_Na_leak,'Di':D_Na,'De':D_Na,'ki_init':Na_i_init,'ke_init':Na_e_init,'z':1.0, 'name':'Na','f_e': Na_e_f,'f_i':Na_i_f,'rho_p': 3*rho_pump}
-	# K  = {'g_leak':g_K_leak, 'Di':D_K, 'De':D_K, 'ki_init':K_i_init, 'ke_init':K_e_init, 'z':1.0, 'name':'K' ,'f_e': K_e_f, 'f_i':K_i_f, 'rho_p':-2*rho_pump}
-	# Cl = {'g_leak':g_Cl_leak,'Di':D_Cl,'De':D_Cl,'ki_init':Cl_i_init,'ke_init':Cl_e_init,'z':-1.0,'name':'Cl','f_e': Cl_e_f,'f_i':Cl_i_f,'rho_p':0.0}
-
+	
 	# create ions (Na conductivity is set below for each model)
 	Na = {'Di':D_Na,'De':D_Na,'ki_init':Na_i_init,'ke_init':Na_e_init,'z':1.0, 'name':'Na','f_e': Na_e_f,'f_i':Na_i_f}
 	K  = {'Di':D_K, 'De':D_K, 'ki_init':K_i_init, 'ke_init':K_e_init, 'z':1.0, 'name':'K' ,'f_e': K_e_f, 'f_i':K_i_f,}

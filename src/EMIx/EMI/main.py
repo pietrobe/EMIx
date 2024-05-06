@@ -6,7 +6,11 @@ from sys   import argv
 
 
 #  Na stimulus definition
-def g_Na_stim(g_syn_bar, a_syn, t):			
+def g_Na_stim(t):
+	
+	a_syn     = 0.002           
+	g_syn_bar = 40  
+
 	return Expression('g_syn_bar*exp(-fmod(t,0.01)/a_syn)', g_syn_bar=g_syn_bar, a_syn=a_syn, t=t, degree=4)				
 
 

@@ -18,30 +18,30 @@ TOL       = 1e-9
 TOL_PHI_M = 1e-4
 
 #  Na stimulus definition
-def g_Na_stim(g_syn_bar, a_syn, t):			
-	return Expression('g_syn_bar*exp(-fmod(t,0.01)/a_syn)', g_syn_bar=g_syn_bar, a_syn=a_syn, t=t, degree=4)				
+def g_Na_stim(t):			
+	return Expression('40*exp(-fmod(t,0.01)/0.002)', t=t, degree=4)				
 
 if __name__=='__main__':
 			
-	# input files	
-	input_dir   = (Path(__file__).parent.parent.parent / "data/square").absolute().as_posix()	
-	input_files = {'mesh_file':             input_dir + "/square32.xml", \
-		 		   'subdomais_file': 		input_dir + "/square_physical_region32.xml", \
-		 		   'facets_file':           input_dir + "/square_facet_region32.xml", \
-		 		   'intra_restriction_dir': input_dir + "/square_restriction_om_i32.rtc.xml", \
-		 		   'extra_restriction_dir': input_dir + "/square_restriction_om_e32.rtc.xml"}		
+	# # input files	
+	# input_dir   = (Path(__file__).parent.parent.parent / "data/square").absolute().as_posix()	
+	# input_files = {'mesh_file':             input_dir + "/square32.xml", \
+	# 	 		   'subdomais_file': 		input_dir + "/square_physical_region32.xml", \
+	# 	 		   'facets_file':           input_dir + "/square_facet_region32.xml", \
+	# 	 		   'intra_restriction_dir': input_dir + "/square_restriction_om_i32.rtc.xml", \
+	# 	 		   'extra_restriction_dir': input_dir + "/square_restriction_om_e32.rtc.xml"}		
 		   	
-	# NOTE: boundary tag is not necessary for Neumann BC		   	
-	tags = {'intra': 1 , 'extra': 2, 'membrane': 2}	
+	# # NOTE: boundary tag is not necessary for Neumann BC		   	
+	# tags = {'intra': 1 , 'extra': 2, 'membrane': 2}	
 		
 	# create EMI problem and ionic model
-	problem = KNPEMI_problem(input_files, tags, dt=0.00002)		
+	problem = KNPEMI_problem('config.yml')		
 
 	# add HH ionic model
 	problem.add_ionic_model("HH", stim_fun=g_Na_stim)
 
 	# solve with both .xdmf and .png output
-	solver = KNPEMI_solver(problem, time_steps=50, save_xdmf_files=False, save_png_files=True)	
+	solver = KNPEMI_solver(problem, save_xdmf_files=False, save_png_files=True)	
 	solver.direct_solver = True
 	solver.solve()
 
@@ -49,9 +49,7 @@ if __name__=='__main__':
 
 	# membrane potential
 	final_err_v = abs(solver.v_t[-1] - FINAL_PHI_M)	
-	print(final_err_v)
-	assert final_err_v < TOL_PHI_M
-
+	
 	# concentrations
 	ui = problem.wh.sub(0)
 	ue = problem.wh.sub(1)
@@ -75,6 +73,9 @@ if __name__=='__main__':
 	err_K_e  = abs(MAX_FINAL_K_e  - ue_K_max) /abs(ue_K_max)
 	err_Cl_e = abs(MAX_FINAL_CL_e - ue_Cl_max)/abs(ue_Cl_max)
 
+	print('\nErrors:')
+	print(final_err_v)
+	print('-------------')
 	print(err_Na_i)
 	print(err_Na_e)
 	print(err_K_i)
@@ -83,6 +84,7 @@ if __name__=='__main__':
 	print(err_Cl_e)
 
 	# tests
+	assert final_err_v < TOL_PHI_M
 	assert err_Na_i < TOL
 	assert err_Na_e < TOL
 	assert err_K_i  < TOL

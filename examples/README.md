@@ -1,30 +1,13 @@
 ### EMI usage, based on *EMI_example.py*
 
-Create dictionary with input files:
-
+Given an input file config.yml create an EMI (or KNPEMI) problem
 ```
-input_files = {'mesh_file':"path/mesh.xdmf", 'facets_file': "path/facets.xdmf", \
-		'intra_restriction_dir': "path/interior_restriction.rtc.xdmf", \
-		'extra_restriction_dir': "path/exterior_restriction.rtc.xdmf"}
+problem = EMI_problem(config.yml)
 ```
+If not specified in config.yml, default input parameters are specified in (KNP)EMI_problem.py
 
-
-* `mesh_file` contains volume tags
-* `facets_file` contains surface tags
-* `intra/extra_restriction_dir` contain multiphenics restrictions 
-
+The boundary tag is not necessary, when pure Neumann boundary conditions are used (default). The default value of the extra tag is 1 and the default of membrane is the same as the intra tag. The intra tag must be provided. 
 Read `data/README.md` for additional info about input generation from surface geometries.
-
-Encode tag information in a dictionary:
-
-```
-tags = {'intra': 3 , 'extra': 1, 'boundary': 4, 'membrane': 2}
-```
-The boundary tag is not necessary, when pure Neumann boundary conditions are used (default). The default value of the extra tag is 1 and the default of membrane is the same as the intra tag. The intra tag must be proveide. Construct EMI problem given time step *dt*:
-
-```
-problem = EMI_problem(input_files, tags, dt)
-```
 
 Create ionic model (possibly for membrane subset, using tags=... argument, default is applied on all membranes) and call problem.init_ionic_model():
 
@@ -34,42 +17,14 @@ problem.init_ionic_model([HH])
 ```
 
 
-Create solver object, given *time_steps*, and solve
+Create solver object and solve
 
 ```
-solver = EMI_solver(problem, time_steps)
+solver = EMI_solver(problem)
 solver.solve()
 ```
 
 ### Structure and functionalities
-
-The directories *src/EMIx/KNP* and *src/EMIx/EMI* contain files with the same structure, e.g. for EMI:
-
-*EMI_problem.py*
-
-* in the init() constructor mesh scaling factor and source factors can be set
-* physical parameters, FEM order, initial and boundary conditions can be set, e.g.:
-
-
-```
-# physical parameters
-C_M     = 0.01
-sigma_i = 1.0
-sigma_e = 1.0
-	
-# initial boundary potential 
-phi_e_init = Constant(0.0)
-
-# initial membrane potential 
-phi_M_init = Constant(-0.06774) 
-
-# order 
-fem_order = 1
-
-# BC
-dirichlet_bcs = False
-```
-
 
 *EMI_solver.py*
 
@@ -92,7 +47,6 @@ save_mat        = False
 *EMI_ionic_model.py*
 
 * new ionic model can be created
-
 
 
 ##  Visualize output in Paraview
