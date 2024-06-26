@@ -35,7 +35,7 @@ The easiest way to get started is to install FEniCS via Docker and then to insta
 To download and enter the EMIx source code
 
 ```
-git clone git@github.com:pietrobe/EMIx.git
+git clone https://github.com/pietrobe/EMIx.git
 cd EMIx
 ```
 
