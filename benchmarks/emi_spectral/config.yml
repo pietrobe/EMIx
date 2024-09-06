@@ -1,7 +1,7 @@
 # Numerical parameters 
 time_steps : 1
 dt : 0.01
-mesh_conversion_factor : 1.0e-3
+mesh_conversion_factor : 2.0e-4
 C_M : 1
 
 input_dir             : "meshes/ncells_50_size_5000/"
@@ -19,5 +19,5 @@ membrane_tags: [2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,
         27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,
         40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51]
 
-phi_M_init : '0.5*sin((x[0]*x[0] + x[1]*x[1]))'
+phi_M_init : '0.5*sin(10*(x[0]*x[0] + x[1]*x[1]))'
 
