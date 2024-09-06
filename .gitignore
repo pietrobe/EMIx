@@ -2,6 +2,8 @@
 src/EMIx/EMI/output
 src/EMIx/KNPEMI/output
 benchmarks/output
+benchmarks/emi_spectral/output
+benchmarks/emi_spectral/meshes
 examples/output
 
 # Byte-compiled / optimized / DLL files
