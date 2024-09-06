@@ -133,7 +133,11 @@ class Mixed_dimensional_problem(ABC):
         if 'dirichlet_bcs' in config: self.dirichlet_bcs = config['dirichlet_bcs']      
 
         # initial membrane potential
-        if 'phi_M_init' in config: self.phi_M_init = Constant(config['phi_M_init'])
+        if 'phi_M_init' in config: 
+            if isinstance(config['phi_M_init'], str):
+                self.phi_M_init = Expression(config['phi_M_init'], degree=4)
+            else:
+                self.phi_M_init = Constant(config['phi_M_init'])
 
         # set diffusivities (for EMI)
         if 'sigma_i' in config: self.sigma_i = config['sigma_i']      
@@ -302,7 +306,7 @@ class Mixed_dimensional_problem(ABC):
             self.mesh.coordinates()[:] *= self.m_conversion_factor
                                            
             # Restrictions
-            if MPI.comm_world.rank == 0: print('Creating mesh restrictions...')         
+            if MPI.comm_world.rank == 0: print('Creating mesh restrictions...') 
             self.interior = MeshRestriction(self.mesh, intra_restriction_dir)
             self.exterior = MeshRestriction(self.mesh, extra_restriction_dir)      
 
