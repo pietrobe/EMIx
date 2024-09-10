@@ -54,18 +54,19 @@ def generate_subdomain_restriction(mesh, subdomains, subdomain_ids):
     return restriction
 
 if __name__ == "__main__":
-    ncells = 50
-    size = 5000
-    meshfile = Path(f"meshes/ncells_{ncells}_size_{size}/mesh.xdmf")
-    if not meshfile.exists():
-        download_mesh(ncells, size, meshfile.parent)
-    mesh, labels, boundary_marker = read_mesh(str(meshfile), f"{meshfile.parent}/facets.xdmf")
-    
-    ecs_ids = [1]
-    cell_ids = range(2, 2 + ncells)
-    # Generate subdomain restrictions
-    interior_restriction = generate_subdomain_restriction(mesh, labels, cell_ids)
-    exterior_restriction = generate_subdomain_restriction(mesh, labels, ecs_ids)
-    
-    interior_restriction._write(f"{meshfile.parent}/interior_restriction.rtc.xdmf")
-    exterior_restriction._write(f"{meshfile.parent}/exterior_restriction.rtc.xdmf")
+    size = 10000 # [5000, 10000, 20000, 40000] are available
+    for ncells in [10, 50, 100, 200]:
+        meshfile = Path(f"meshes/ncells_{ncells}_size_{size}/mesh.xdmf")
+        if not meshfile.exists():
+            download_mesh(ncells, size, meshfile.parent)
+        mesh, labels, boundary_marker = read_mesh(str(meshfile), f"{meshfile.parent}/facets.xdmf")
+        
+        ecs_ids = [1]
+        cell_ids = range(2, 2 + ncells)
+        # Generate subdomain restrictions
+        print("generating restrictions...")
+        interior_restriction = generate_subdomain_restriction(mesh, labels, cell_ids)
+        exterior_restriction = generate_subdomain_restriction(mesh, labels, ecs_ids)
+        
+        interior_restriction._write(f"{meshfile.parent}/interior_restriction.rtc.xdmf")
+        exterior_restriction._write(f"{meshfile.parent}/exterior_restriction.rtc.xdmf")
