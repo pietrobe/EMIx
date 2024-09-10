@@ -26,7 +26,7 @@ class EMI_solver(object):
 
 		# Init output folder
 		# FIXME: Should be generic
-		Path("output").mkdir(parents=True, exist_ok=True)
+		Path(self.problem.output_dir).mkdir(parents=True, exist_ok=True)
 
 		# output files		
 		self.save_xdmf_files = save_xdmf_files
@@ -115,11 +115,11 @@ class EMI_solver(object):
 		if self.save_mat:
 				
 			print("Saving output/Amat...")  
-			dump(self.A.mat(),'output/Amat')	
+			dump(self.A.mat(), self.problem.output_dir + 'Amat')	
 
 			if self.pc_block_Jacobi:
 				print("Saving output/Pmat...")  
-				dump(self.P.mat(),'output/Pmat')	
+				dump(self.P.mat(), self.problem.output_dir + 'Pmat')	
 
 			exit()												
 			
@@ -328,12 +328,12 @@ class EMI_solver(object):
 	def init_xdmf(self):
 
 		# write tag data		
-		xdmf_file = XDMFFile(MPI.comm_world, 'output/subdomains.xdmf')
+		xdmf_file = XDMFFile(MPI.comm_world, self.problem.output_dir + 'subdomains.xdmf')
 		xdmf_file.write(self.problem.subdomains)	
 		xdmf_file.close()			
 
 		# write solution
-		self.xdmf_file = XDMFFile(MPI.comm_world, "output/solution.xdmf")		
+		self.xdmf_file = XDMFFile(MPI.comm_world, self.problem.output_dir + "solution.xdmf")		
 
 		self.xdmf_file.parameters['functions_share_mesh' ] = True
 		self.xdmf_file.parameters['rewrite_function_mesh'] = False
@@ -431,7 +431,7 @@ class EMI_solver(object):
 	pc_block_Jacobi    = False
 	norm_type    	   = 'preconditioned'	
 	nonzero_init_guess = True 
-	verbose            = False
+	verbose            = True
 	
 	# output parameters	
 	save_mat = False

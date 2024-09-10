@@ -79,7 +79,9 @@ class Mixed_dimensional_problem(ABC):
             self.input_files['extra_restriction_dir'] = restriction_e
         else:
             print('Provide restrictions directories in input .yml file')
-            return        
+            return       
+
+        self.output_dir = config.get("output_dir", "output/") 
 
         # init time step
         if 'dt' in config:
