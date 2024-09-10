@@ -1,0 +1,18 @@
+# Numerical parameters 
+time_steps : 1
+dt : 0.01
+mesh_conversion_factor : 2.0e-4
+C_M : 1
+
+input_dir             : "meshes/ncells_10_size_5000/"
+cell_tag_file         : "mesh.xdmf"
+facet_tag_file        : "facets.xdmf"
+intra_restriction_dir : "interior_restriction.rtc.xdmf"
+extra_restriction_dir : "exterior_restriction.rtc.xdmf"
+output_dir            : "results/ncells_10_size_5000/"
+
+ecs_tags : 1
+ics_tags : [2,  3,  4,  5,  6,  7,  8,  9, 10, 11]
+
+phi_M_init : '0.5*sin(10*(x[0]*x[0] + x[1]*x[1] + x[2]*x[2]))'
+
