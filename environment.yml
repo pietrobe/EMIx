@@ -12,5 +12,10 @@ dependencies:
   - pytest
   - conda-ecosystem-user-package-isolation
   - pyyaml
+  - pyvista
+  - meshio
+  - vtk=*=*osmesa*  # osmesa for headless plotting
+  - pip
   - pip:
       - "git+https://github.com/multiphenics/multiphenics.git"
+      - cmocean
