@@ -39,9 +39,9 @@ sigma_i = 1.0
 sigma_e = 1.0
 
 # flags
-save_output   = True   
+save_output   = False 
 save_matrix   = False
-direct_solver = False
+direct_solver = True
 ksp_type      = 'cg'
 pc_type       = 'ilu' #gamg
 ksp_rtol      = 1e-6
@@ -56,8 +56,8 @@ assemble_time = 0
 v = Expression("sin(2*pi*x[0]) * sin(2*pi*x[1])", degree = 4)
 
 # forcing factors
-source_i = Expression("0*8*pi*pi*sin(2*pi*x[0]) * sin(2*pi*x[1]) * (1.0 + exp(-t))", degree = 4, t = t)
-source_e = Expression("0*8*pi*pi*sin(2*pi*x[0]) * sin(2*pi*x[1])",  degree = 4)
+source_i = Expression("8*pi*pi*sin(2*pi*x[0]) * sin(2*pi*x[1]) * (1.0 + exp(-t))", degree = 4, t = t)
+source_e = Expression("8*pi*pi*sin(2*pi*x[0]) * sin(2*pi*x[1])",  degree = 4)
 
 if save_output:
     # output files
